@@ -76,29 +76,68 @@ const JobForm = () => {
       setSaving(true)
       setMessage('')
 
+      console.log('Form data before processing:', data)
+
       // Format data for API
+      const skills = data.skills.map(skill => skill.value).filter(Boolean)
+      
+      if (skills.length === 0) {
+        setMessage('At least one skill is required')
+        return
+      }
+
       const formattedData = {
-        ...data,
-        skills: data.skills.map(skill => skill.value).filter(Boolean),
-        stipend: data.stipend ? parseFloat(data.stipend) : undefined,
-        salary: data.salary ? parseFloat(data.salary) : undefined,
-        eligibility: {
-          ...data.eligibility,
-          minCgpa: data.eligibility.minCgpa ? parseFloat(data.eligibility.minCgpa) : undefined
+        title: data.title.trim(),
+        description: data.description.trim(),
+        company: data.company.trim(),
+        location: data.location.trim(),
+        jobType: data.jobType,
+        deadline: data.deadline,
+        skills: skills,
+        isRemote: data.isRemote || false
+      }
+
+      // Add optional fields only if they have values
+      if (data.stipend && data.stipend.trim() !== '') {
+        formattedData.stipend = parseFloat(data.stipend)
+      }
+      
+      if (data.salary && data.salary.trim() !== '') {
+        formattedData.salary = parseFloat(data.salary)
+      }
+
+      // Add eligibility criteria if provided
+      if (data.eligibility?.minCgpa && data.eligibility.minCgpa.trim() !== '') {
+        formattedData.eligibility = {
+          minCgpa: parseFloat(data.eligibility.minCgpa)
         }
       }
 
+      console.log('Formatted data for API:', formattedData)
+
       if (isEdit) {
-        await axios.put(`/api/jobs/${id}`, formattedData)
+        const response = await axios.put(`/api/jobs/${id}`, formattedData)
+        console.log('Update response:', response.data)
         setMessage('Job updated successfully!')
       } else {
-        await axios.post('/api/jobs', formattedData)
+        const response = await axios.post('/api/jobs', formattedData)
+        console.log('Create response:', response.data)
         setMessage('Job posted successfully!')
-        setTimeout(() => navigate('/company/jobs'), 2000)
+        setTimeout(() => navigate('/dashboard'), 2000)
       }
     } catch (error) {
       console.error('Error saving job:', error)
-      setMessage(error.response?.data?.message || 'Failed to save job')
+      console.error('Error response:', error.response?.data)
+      
+      if (error.response?.data?.errors) {
+        // Handle validation errors
+        const errorMessages = error.response.data.errors.map(err => err.message).join(', ')
+        setMessage(`Validation errors: ${errorMessages}`)
+      } else if (error.response?.data?.details) {
+        setMessage(`Error: ${error.response.data.details}`)
+      } else {
+        setMessage(error.response?.data?.message || 'Failed to save job. Please check all required fields.')
+      }
     } finally {
       setSaving(false)
     }

@@ -137,7 +137,14 @@ const StudentDashboard = () => {
             ))}
           </div>
         ) : (
-          <p className="text-gray-600">No applications yet. Start by browsing available jobs!</p>
+          <div className="text-center py-8">
+            <p className="text-gray-600 mb-4">No applications yet. Start by browsing available jobs!</p>
+            <div className="space-y-2 text-sm text-gray-500">
+              <p>📝 Step 1: Complete your profile with skills and resume</p>
+              <p>🔍 Step 2: Browse available jobs</p>
+              <p>📄 Step 3: Apply with a cover letter</p>
+            </div>
+          </div>
         )}
       </div>
     </div>

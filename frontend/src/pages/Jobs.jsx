@@ -163,6 +163,21 @@ const Jobs = () => {
                     Deadline: {new Date(job.deadline).toLocaleDateString()}
                   </div>
                 </div>
+
+                <div className="flex justify-between items-center mt-4">
+                  <Link
+                    to={`/jobs/${job._id}`}
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  >
+                    View Details →
+                  </Link>
+                  <Link
+                    to={`/jobs/${job._id}`}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm font-medium"
+                  >
+                    Apply Now
+                  </Link>
+                </div>
               </div>
             ))
           ) : (

@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useForm } from 'react-hook-form'
+import { Eye, EyeOff } from 'lucide-react'
 
 const Register = () => {
   const { register: registerUser } = useAuth()
   const navigate = useNavigate()
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm()
   const watchRole = watch('role')
@@ -74,17 +76,30 @@ const Register = () => {
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Password
           </label>
-          <input
-            type="password"
-            {...register('password', { 
-              required: 'Password is required',
-              minLength: {
-                value: 6,
-                message: 'Password must be at least 6 characters'
-              }
-            })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              {...register('password', { 
+                required: 'Password is required',
+                minLength: {
+                  value: 6,
+                  message: 'Password must be at least 6 characters'
+                }
+              })}
+              className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+            >
+              {showPassword ? (
+                <EyeOff className="h-5 w-5" />
+              ) : (
+                <Eye className="h-5 w-5" />
+              )}
+            </button>
+          </div>
           {errors.password && (
             <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
           )}
@@ -101,6 +116,7 @@ const Register = () => {
             <option value="">Select Role</option>
             <option value="student">Student</option>
             <option value="company">Company</option>
+            <option value="admin">Admin</option>
           </select>
           {errors.role && (
             <p className="text-red-500 text-sm mt-1">{errors.role.message}</p>

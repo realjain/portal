@@ -1,9 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import { Plus, Trash2, Save, User, Award } from 'lucide-react'
 
 const Profile = () => {
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const returnTo = searchParams.get('returnTo')
+  
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -84,7 +89,14 @@ const Profile = () => {
       setProfile(response.data.profile)
       setMessage('Profile updated successfully!')
       
-      setTimeout(() => setMessage(''), 3000)
+      // If profile is now complete and there's a return URL, redirect after a short delay
+      if (isComplete && returnTo) {
+        setTimeout(() => {
+          navigate(returnTo)
+        }, 2000)
+      } else {
+        setTimeout(() => setMessage(''), 3000)
+      }
     } catch (error) {
       console.error('Error updating profile:', error)
       setMessage(error.response?.data?.message || 'Failed to update profile')
@@ -108,6 +120,14 @@ const Profile = () => {
           <User className="w-8 h-8 text-blue-600 mr-3" />
           <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
         </div>
+
+        {returnTo && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-blue-800">
+              <strong>Complete your profile to apply for jobs!</strong> Fill in the required fields below and we'll take you back to the job application.
+            </p>
+          </div>
+        )}
 
         {message && (
           <div className={`mb-6 p-4 rounded-md ${

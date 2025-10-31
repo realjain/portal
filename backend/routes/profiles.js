@@ -6,13 +6,35 @@ const { auth, authorize } = require('../middleware/auth')
 
 const router = express.Router()
 
+// Debug endpoint to check user info
+router.get('/debug', auth, async (req, res) => {
+  try {
+    res.json({
+      user: {
+        id: req.user._id,
+        email: req.user.email,
+        role: req.user.role,
+        name: req.user.name,
+        department: req.user.department,
+        isActive: req.user.isActive
+      },
+      hasProfile: !!(await StudentProfile.findOne({ userId: req.user._id }))
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
 // Get student's own profile
 router.get('/me', [auth, authorize('student')], async (req, res) => {
   try {
+    console.log('Getting profile for user:', req.user._id, req.user.email, req.user.role)
+    
     const profile = await StudentProfile.findOne({ userId: req.user._id })
       .populate('userId', 'name email department')
 
     if (!profile) {
+      console.log('No profile found for user:', req.user._id)
       return res.status(404).json({ message: 'Profile not found' })
     }
 
@@ -34,26 +56,35 @@ router.put('/me', [
   body('projects').optional().isArray()
 ], async (req, res) => {
   try {
+    console.log('Profile update request from user:', req.user._id, req.user.email, req.user.role)
+    console.log('Request body:', JSON.stringify(req.body, null, 2))
+
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() })
+      console.log('Validation errors:', errors.array())
+      return res.status(400).json({ 
+        message: 'Validation failed',
+        errors: errors.array() 
+      })
     }
 
     let profile = await StudentProfile.findOne({ userId: req.user._id })
+    console.log('Existing profile found:', !!profile)
     
     if (!profile) {
       // Create new profile if doesn't exist
+      console.log('Creating new profile for user:', req.user._id)
       profile = new StudentProfile({
         userId: req.user._id,
-        program: 'Not specified',
-        graduationYear: new Date().getFullYear() + 4
+        program: req.body.program || 'Not specified',
+        graduationYear: req.body.graduationYear || new Date().getFullYear() + 4
       })
     }
 
     // Update fields
     const allowedFields = [
       'program', 'graduationYear', 'cgpa', 'skills', 'projects',
-      'resumeUrl', 'linkedinUrl', 'githubUrl', 'portfolioUrl'
+      'resumeUrl', 'linkedinUrl', 'githubUrl', 'portfolioUrl', 'isProfileComplete'
     ]
 
     allowedFields.forEach(field => {
@@ -62,7 +93,9 @@ router.put('/me', [
       }
     })
 
+    console.log('Profile before save:', JSON.stringify(profile.toObject(), null, 2))
     await profile.save()
+    console.log('Profile saved successfully')
 
     const populatedProfile = await StudentProfile.findById(profile._id)
       .populate('userId', 'name email department')
@@ -73,7 +106,24 @@ router.put('/me', [
     })
   } catch (error) {
     console.error('Update profile error:', error)
-    res.status(500).json({ message: 'Server error' })
+    console.error('Error stack:', error.stack)
+    
+    // Send more detailed error information
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ 
+        message: 'Validation error',
+        details: error.message,
+        errors: Object.keys(error.errors).map(key => ({
+          field: key,
+          message: error.errors[key].message
+        }))
+      })
+    }
+    
+    res.status(500).json({ 
+      message: 'Server error',
+      details: error.message 
+    })
   }
 })
 

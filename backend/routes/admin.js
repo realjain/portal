@@ -1,134 +1,74 @@
 const express = require('express')
-const { body, validationResult } = require('express-validator')
 const User = require('../models/User')
 const Job = require('../models/Job')
 const Application = require('../models/Application')
-const StudentProfile = require('../models/StudentProfile')
-const { auth, authorize } = require('../middleware/auth')
+const { auth } = require('../middleware/auth')
+const adminAuth = require('../middleware/adminAuth')
 
 const router = express.Router()
 
-// Get user statistics
-router.get('/stats/users', [auth, authorize('admin')], async (req, res) => {
+// Get dashboard stats
+router.get('/stats', auth, adminAuth, async (req, res) => {
   try {
     const totalUsers = await User.countDocuments({ isActive: true })
-    const usersByRole = await User.aggregate([
-      { $match: { isActive: true } },
-      { $group: { _id: '$role', count: { $sum: 1 } } }
-    ])
-
-    const roleStats = usersByRole.reduce((acc, item) => {
-      acc[item._id] = item.count
-      return acc
-    }, {})
-
-    res.json({
-      total: totalUsers,
-      byRole: roleStats
-    })
-  } catch (error) {
-    console.error('Get user stats error:', error)
-    res.status(500).json({ message: 'Server error' })
-  }
-})
-
-// Get job statistics
-router.get('/stats/jobs', [auth, authorize('admin')], async (req, res) => {
-  try {
+    const totalStudents = await User.countDocuments({ role: 'student', isActive: true })
+    const totalCompanies = await User.countDocuments({ role: 'company', isActive: true })
     const totalJobs = await Job.countDocuments()
-    const activeJobs = await Job.countDocuments({ status: 'open' })
     const totalApplications = await Application.countDocuments()
-    
-    // Placement funnel
-    const placementFunnel = await Application.aggregate([
-      { $group: { _id: '$stage', count: { $sum: 1 } } }
-    ])
+    const activeJobs = await Job.countDocuments({ status: 'open' }) // Changed from 'active' to 'open'
 
-    const funnelStats = placementFunnel.reduce((acc, item) => {
-      acc[item._id] = item.count
-      return acc
-    }, {})
-
-    // Calculate placement rate (offered / total applications)
-    const placementRate = totalApplications > 0 
-      ? Math.round((funnelStats.offered || 0) / totalApplications * 100)
-      : 0
-
-    // Skills demand
-    const skillsDemand = await Job.aggregate([
-      { $unwind: '$skills' },
-      { $group: { _id: '$skills', count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 10 }
-    ])
-
-    // Company statistics
-    const companyStats = await Job.aggregate([
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'companyId',
-          foreignField: '_id',
-          as: 'company'
-        }
-      },
-      { $unwind: '$company' },
-      {
-        $group: {
-          _id: '$company.companyName',
-          jobCount: { $sum: 1 }
-        }
-      },
-      { $sort: { jobCount: -1 } },
-      { $limit: 10 }
-    ])
+    console.log('Admin stats debug:', {
+      totalUsers,
+      totalStudents,
+      totalCompanies,
+      totalJobs,
+      totalApplications,
+      activeJobs
+    })
 
     res.json({
-      total: totalJobs,
-      active: activeJobs,
-      applications: totalApplications,
-      placementRate,
-      funnel: funnelStats,
-      skillsDemand,
-      companyStats
+      totalUsers,
+      totalStudents,
+      totalCompanies,
+      totalJobs,
+      totalApplications,
+      activeJobs
     })
   } catch (error) {
-    console.error('Get job stats error:', error)
+    console.error('Error fetching admin stats:', error)
     res.status(500).json({ message: 'Server error' })
   }
 })
 
-// Get all users
-router.get('/users', [auth, authorize('admin')], async (req, res) => {
+// Get recent users
+router.get('/recent-users', auth, adminAuth, async (req, res) => {
+  try {
+    const users = await User.find()
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .select('-password')
+
+    res.json(users)
+  } catch (error) {
+    console.error('Error fetching recent users:', error)
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
+// Get all users with pagination
+router.get('/users', auth, adminAuth, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1
-    const limit = parseInt(req.query.limit) || 20
+    const limit = parseInt(req.query.limit) || 50
     const skip = (page - 1) * limit
 
-    const query = {}
-    
-    if (req.query.role) {
-      query.role = req.query.role
-    }
-
-    if (req.query.department) {
-      query.department = req.query.department
-    }
-
-    if (req.query.search) {
-      query.$or = [
-        { name: { $regex: req.query.search, $options: 'i' } },
-        { email: { $regex: req.query.search, $options: 'i' } }
-      ]
-    }
-
-    const users = await User.find(query)
-      .select('-password')
+    const users = await User.find()
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
+      .select('-password')
 
-    const total = await User.countDocuments(query)
+    const total = await User.countDocuments()
 
     res.json({
       users,
@@ -139,183 +79,69 @@ router.get('/users', [auth, authorize('admin')], async (req, res) => {
       }
     })
   } catch (error) {
-    console.error('Get users error:', error)
+    console.error('Error fetching users:', error)
     res.status(500).json({ message: 'Server error' })
   }
 })
 
 // Update user status
-router.patch('/users/:id/status', [
-  auth,
-  authorize('admin'),
-  body('isActive').isBoolean().withMessage('isActive must be boolean')
-], async (req, res) => {
+router.patch('/users/:id/status', auth, adminAuth, async (req, res) => {
   try {
-    const errors = validationResult(req)
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() })
-    }
-
     const { isActive } = req.body
-    const user = await User.findById(req.params.id)
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { isActive },
+      { new: true }
+    ).select('-password')
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' })
     }
 
-    // Prevent admin from deactivating themselves
-    if (req.params.id === req.user._id.toString()) {
-      return res.status(400).json({ message: 'Cannot modify your own status' })
-    }
-
-    user.isActive = isActive
-    await user.save()
-
-    res.json({
-      message: `User ${isActive ? 'activated' : 'deactivated'} successfully`,
-      user: user.toJSON()
-    })
+    res.json(user)
   } catch (error) {
-    console.error('Update user status error:', error)
+    console.error('Error updating user status:', error)
     res.status(500).json({ message: 'Server error' })
   }
 })
 
-// Get placement analytics
-router.get('/analytics/placement', [auth, authorize('admin')], async (req, res) => {
+// Debug endpoint to check user data
+router.get('/debug-users', auth, adminAuth, async (req, res) => {
   try {
-    const { batch, department } = req.query
-
-    // Build match query
-    const matchQuery = {}
-    if (batch) {
-      // Find students from specific graduation year
-      const students = await StudentProfile.find({ graduationYear: parseInt(batch) })
-      const studentIds = students.map(s => s.userId)
-      matchQuery.studentId = { $in: studentIds }
-    }
-
-    // Placement funnel by batch/department
-    const pipeline = [
-      { $match: matchQuery },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'studentId',
-          foreignField: '_id',
-          as: 'student'
-        }
-      },
-      { $unwind: '$student' }
-    ]
-
-    if (department) {
-      pipeline.push({ $match: { 'student.department': department } })
-    }
-
-    pipeline.push(
-      { $group: { _id: '$stage', count: { $sum: 1 } } },
-      { $sort: { _id: 1 } }
-    )
-
-    const placementFunnel = await Application.aggregate(pipeline)
-
-    // Department-wise placement stats
-    const departmentStats = await Application.aggregate([
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'studentId',
-          foreignField: '_id',
-          as: 'student'
-        }
-      },
-      { $unwind: '$student' },
-      {
-        $group: {
-          _id: {
-            department: '$student.department',
-            stage: '$stage'
-          },
-          count: { $sum: 1 }
-        }
-      },
-      {
-        $group: {
-          _id: '$_id.department',
-          stages: {
-            $push: {
-              stage: '$_id.stage',
-              count: '$count'
-            }
-          }
-        }
+    const allUsers = await User.find({}, 'name email role isActive createdAt').sort({ createdAt: -1 })
+    const usersByRole = await User.aggregate([
+      { $group: { _id: '$role', count: { $sum: 1 }, users: { $push: { name: '$name', email: '$email', isActive: '$isActive' } } } }
+    ])
+    
+    res.json({
+      allUsers,
+      usersByRole,
+      counts: {
+        total: allUsers.length,
+        active: allUsers.filter(u => u.isActive).length,
+        students: allUsers.filter(u => u.role === 'student').length,
+        companies: allUsers.filter(u => u.role === 'company').length,
+        admins: allUsers.filter(u => u.role === 'admin').length
       }
-    ])
-
-    res.json({
-      placementFunnel,
-      departmentStats
     })
   } catch (error) {
-    console.error('Get placement analytics error:', error)
+    console.error('Error in debug users:', error)
     res.status(500).json({ message: 'Server error' })
   }
 })
 
-// Get company analytics
-router.get('/analytics/companies', [auth, authorize('admin')], async (req, res) => {
+// Get user details
+router.get('/users/:id', auth, adminAuth, async (req, res) => {
   try {
-    const companyStats = await Application.aggregate([
-      {
-        $lookup: {
-          from: 'jobs',
-          localField: 'jobId',
-          foreignField: '_id',
-          as: 'job'
-        }
-      },
-      { $unwind: '$job' },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'job.companyId',
-          foreignField: '_id',
-          as: 'company'
-        }
-      },
-      { $unwind: '$company' },
-      {
-        $group: {
-          _id: {
-            companyId: '$job.companyId',
-            companyName: '$company.companyName',
-            stage: '$stage'
-          },
-          count: { $sum: 1 }
-        }
-      },
-      {
-        $group: {
-          _id: {
-            companyId: '$_id.companyId',
-            companyName: '$_id.companyName'
-          },
-          stages: {
-            $push: {
-              stage: '$_id.stage',
-              count: '$count'
-            }
-          },
-          totalApplications: { $sum: '$count' }
-        }
-      },
-      { $sort: { totalApplications: -1 } }
-    ])
+    const user = await User.findById(req.params.id).select('-password')
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' })
+    }
 
-    res.json({ companyStats })
+    res.json(user)
   } catch (error) {
-    console.error('Get company analytics error:', error)
+    console.error('Error fetching user:', error)
     res.status(500).json({ message: 'Server error' })
   }
 })

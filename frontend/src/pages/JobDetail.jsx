@@ -12,6 +12,8 @@ const JobDetail = () => {
   const [loading, setLoading] = useState(true)
   const [applying, setApplying] = useState(false)
   const [hasApplied, setHasApplied] = useState(false)
+  const [profileComplete, setProfileComplete] = useState(false)
+  const [showApplicationForm, setShowApplicationForm] = useState(false)
   const [application, setApplication] = useState({
     coverLetter: '',
     resumeUrl: ''
@@ -21,6 +23,7 @@ const JobDetail = () => {
     fetchJob()
     if (user?.role === 'student') {
       checkApplicationStatus()
+      checkProfileStatus()
     }
   }, [id, user])
 
@@ -47,9 +50,17 @@ const JobDetail = () => {
     }
   }
 
-  const handleApply = async (e) => {
-    e.preventDefault()
-    
+  const checkProfileStatus = async () => {
+    try {
+      const response = await axios.get('/api/profiles/me')
+      setProfileComplete(response.data.isProfileComplete || false)
+    } catch (error) {
+      console.error('Error checking profile status:', error)
+      setProfileComplete(false)
+    }
+  }
+
+  const handleApplyClick = () => {
     if (!user) {
       navigate('/login')
       return
@@ -60,6 +71,19 @@ const JobDetail = () => {
       return
     }
 
+    if (!profileComplete) {
+      if (window.confirm('You need to complete your profile before applying. Would you like to complete it now?')) {
+        navigate(`/profile?returnTo=/jobs/${id}`)
+      }
+      return
+    }
+
+    setShowApplicationForm(true)
+  }
+
+  const handleApply = async (e) => {
+    e.preventDefault()
+
     try {
       setApplying(true)
       await axios.post('/api/applications', {
@@ -69,6 +93,7 @@ const JobDetail = () => {
       })
       
       setHasApplied(true)
+      setShowApplicationForm(false)
       alert('Application submitted successfully!')
     } catch (error) {
       console.error('Error applying:', error)
@@ -181,46 +206,76 @@ const JobDetail = () => {
         </div>
       )}
 
-      {/* Application Form */}
+      {/* Apply Button */}
       {user?.role === 'student' && !hasApplied && new Date(job.deadline) > new Date() && (
         <div className="bg-white rounded-lg shadow-md p-8">
           <h2 className="text-2xl font-semibold mb-4">Apply for this Position</h2>
-          <form onSubmit={handleApply} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Cover Letter *
-              </label>
-              <textarea
-                required
-                rows={6}
-                value={application.coverLetter}
-                onChange={(e) => setApplication(prev => ({ ...prev, coverLetter: e.target.value }))}
-                placeholder="Tell us why you're interested in this position..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+          
+          {!showApplicationForm ? (
+            <div className="text-center">
+              <button
+                onClick={handleApplyClick}
+                className="bg-blue-600 text-white py-3 px-8 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg font-medium"
+              >
+                Apply Now
+              </button>
+              
+              {!profileComplete && (
+                <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-yellow-800 text-sm">
+                    <strong>Note:</strong> You'll need to complete your profile before applying. 
+                    We'll guide you through it when you click "Apply Now".
+                  </p>
+                </div>
+              )}
             </div>
+          ) : (
+            <form onSubmit={handleApply} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Cover Letter *
+                </label>
+                <textarea
+                  required
+                  rows={6}
+                  value={application.coverLetter}
+                  onChange={(e) => setApplication(prev => ({ ...prev, coverLetter: e.target.value }))}
+                  placeholder="Tell us why you're interested in this position..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Resume URL (optional)
-              </label>
-              <input
-                type="url"
-                value={application.resumeUrl}
-                onChange={(e) => setApplication(prev => ({ ...prev, resumeUrl: e.target.value }))}
-                placeholder="https://..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Resume URL (optional)
+                </label>
+                <input
+                  type="url"
+                  value={application.resumeUrl}
+                  onChange={(e) => setApplication(prev => ({ ...prev, resumeUrl: e.target.value }))}
+                  placeholder="https://..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
 
-            <button
-              type="submit"
-              disabled={applying}
-              className="w-full bg-blue-600 text-white py-3 px-6 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-            >
-              {applying ? 'Submitting...' : 'Submit Application'}
-            </button>
-          </form>
+              <div className="flex space-x-4">
+                <button
+                  type="button"
+                  onClick={() => setShowApplicationForm(false)}
+                  className="flex-1 bg-gray-300 text-gray-700 py-3 px-6 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={applying}
+                  className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                >
+                  {applying ? 'Submitting...' : 'Submit Application'}
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       )}
 

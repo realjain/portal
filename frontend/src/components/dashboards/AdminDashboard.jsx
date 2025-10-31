@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react'
+import { Users, Building2, Briefcase, FileText, TrendingUp, Shield } from 'lucide-react'
 import axios from 'axios'
-import { Users, Briefcase, TrendingUp, Settings } from 'lucide-react'
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
     totalUsers: 0,
+    totalStudents: 0,
+    totalCompanies: 0,
     totalJobs: 0,
     totalApplications: 0,
-    placementRate: 0
+    activeJobs: 0
   })
+  const [recentUsers, setRecentUsers] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -17,27 +20,15 @@ const AdminDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      // In a real app, you'd have admin-specific endpoints
-      const [usersRes, jobsRes] = await Promise.all([
-        axios.get('/api/admin/stats/users'),
-        axios.get('/api/admin/stats/jobs')
-      ])
-      
-      setStats({
-        totalUsers: usersRes.data.total || 0,
-        totalJobs: jobsRes.data.total || 0,
-        totalApplications: jobsRes.data.applications || 0,
-        placementRate: jobsRes.data.placementRate || 0
-      })
+      // Fetch stats
+      const statsResponse = await axios.get('/api/admin/stats')
+      setStats(statsResponse.data)
+
+      // Fetch recent users
+      const usersResponse = await axios.get('/api/admin/recent-users')
+      setRecentUsers(usersResponse.data)
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
-      // Set mock data for demo
-      setStats({
-        totalUsers: 150,
-        totalJobs: 25,
-        totalApplications: 300,
-        placementRate: 75
-      })
     } finally {
       setLoading(false)
     }
@@ -45,7 +36,7 @@ const AdminDashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-12">
+      <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     )
@@ -53,107 +44,133 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center">
-            <Users className="w-8 h-8 text-blue-600" />
-            <div className="ml-4">
+      {/* Header */}
+      <div className="flex items-center space-x-3">
+        <Shield className="w-8 h-8 text-blue-600" />
+        <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
+          <div className="flex items-center justify-between">
+            <div>
               <p className="text-sm font-medium text-gray-600">Total Users</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.totalUsers}</p>
             </div>
+            <Users className="w-12 h-12 text-blue-500" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center">
-            <Briefcase className="w-8 h-8 text-green-600" />
-            <div className="ml-4">
+        <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-green-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Students</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.totalStudents}</p>
+            </div>
+            <Users className="w-12 h-12 text-green-500" />
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-purple-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Companies</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.totalCompanies}</p>
+            </div>
+            <Building2 className="w-12 h-12 text-purple-500" />
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-orange-500">
+          <div className="flex items-center justify-between">
+            <div>
               <p className="text-sm font-medium text-gray-600">Total Jobs</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalJobs}</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.totalJobs}</p>
             </div>
+            <Briefcase className="w-12 h-12 text-orange-500" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center">
-            <TrendingUp className="w-8 h-8 text-purple-600" />
-            <div className="ml-4">
+        <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-red-500">
+          <div className="flex items-center justify-between">
+            <div>
               <p className="text-sm font-medium text-gray-600">Applications</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalApplications}</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.totalApplications}</p>
             </div>
+            <FileText className="w-12 h-12 text-red-500" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center">
-            <Settings className="w-8 h-8 text-orange-600" />
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Placement Rate</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.placementRate}%</p>
+        <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-indigo-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Active Jobs</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.activeJobs}</p>
             </div>
+            <TrendingUp className="w-12 h-12 text-indigo-500" />
           </div>
         </div>
       </div>
 
-      {/* Management Sections */}
-      <div className="grid md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">User Management</h2>
-          <div className="space-y-3">
-            <Link
-              to="/admin/students"
-              className="block w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
-            >
-              Manage Students
-            </Link>
-            <Link
-              to="/admin/companies"
-              className="block w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
-            >
-              Manage Companies
-            </Link>
-            <Link
-              to="/admin/jobs"
-              className="block w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
-            >
-              Manage Job Postings
-            </Link>
-          </div>
+      {/* Recent Users */}
+      <div className="bg-white rounded-lg shadow-md">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900">Recent Users</h2>
         </div>
-
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">System Management</h2>
-          <div className="space-y-3">
-            <button className="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
-              Manage Departments
-            </button>
-            <button className="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
-              Manage Skills
-            </button>
-            <button className="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
-              System Settings
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Analytics */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold mb-4">Placement Analytics</h2>
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="text-center">
-            <p className="text-3xl font-bold text-blue-600">85%</p>
-            <p className="text-sm text-gray-600">Students with Complete Profiles</p>
-          </div>
-          <div className="text-center">
-            <p className="text-3xl font-bold text-green-600">92%</p>
-            <p className="text-sm text-gray-600">Application Response Rate</p>
-          </div>
-          <div className="text-center">
-            <p className="text-3xl font-bold text-purple-600">68%</p>
-            <p className="text-sm text-gray-600">Interview Conversion Rate</p>
-          </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Name
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Email
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Role
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Joined
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {recentUsers.map((user) => (
+                <tr key={user._id}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{user.email}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      user.role === 'student' ? 'bg-green-100 text-green-800' :
+                      user.role === 'company' ? 'bg-blue-100 text-blue-800' :
+                      'bg-purple-100 text-purple-800'
+                    }`}>
+                      {user.role}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {new Date(user.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {user.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

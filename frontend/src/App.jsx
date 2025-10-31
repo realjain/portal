@@ -11,6 +11,12 @@ import Profile from './pages/Profile'
 import Applications from './pages/Applications'
 import CompanyJobs from './pages/CompanyJobs'
 import JobForm from './pages/JobForm'
+import UserManagement from './pages/admin/UserManagement'
+import ApplicationManagement from './pages/admin/ApplicationManagement'
+import CompanyApplications from './pages/CompanyApplications'
+import ChangePassword from './components/ChangePassword'
+import Settings from './pages/Settings'
+import TestBackend from './pages/TestBackend'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -60,6 +66,41 @@ function App() {
               <JobForm />
             </ProtectedRoute>
           } />
+
+          <Route path="company/applications/:jobId" element={
+            <ProtectedRoute roles={['company']}>
+              <CompanyApplications />
+            </ProtectedRoute>
+          } />
+
+          {/* Settings Routes */}
+          <Route path="settings" element={
+            <ProtectedRoute>
+              <Settings />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="change-password" element={
+            <ProtectedRoute>
+              <ChangePassword />
+            </ProtectedRoute>
+          } />
+
+          {/* Admin Routes */}
+          <Route path="admin/users" element={
+            <ProtectedRoute roles={['admin']}>
+              <UserManagement />
+            </ProtectedRoute>
+          } />
+
+          <Route path="admin/applications" element={
+            <ProtectedRoute roles={['admin']}>
+              <ApplicationManagement />
+            </ProtectedRoute>
+          } />
+
+          {/* Test Route */}
+          <Route path="test" element={<TestBackend />} />
         </Route>
       </Routes>
     </AuthProvider>

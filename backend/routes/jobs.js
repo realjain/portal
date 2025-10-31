@@ -101,16 +101,39 @@ router.post('/', [
   body('deadline').isISO8601().withMessage('Valid deadline is required')
 ], async (req, res) => {
   try {
+    console.log('Job creation request from user:', req.user._id, req.user.email, req.user.role)
+    console.log('Request body:', JSON.stringify(req.body, null, 2))
+
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() })
+      console.log('Validation errors:', errors.array())
+      return res.status(400).json({ 
+        message: 'Validation failed',
+        errors: errors.array() 
+      })
+    }
+
+    // Clean up the skills array - remove empty values
+    const cleanSkills = req.body.skills.filter(skill => skill && skill.trim() !== '')
+    if (cleanSkills.length === 0) {
+      return res.status(400).json({ message: 'At least one skill is required' })
     }
 
     const jobData = {
       ...req.body,
+      skills: cleanSkills,
       companyId: req.user._id,
       deadline: new Date(req.body.deadline)
     }
+
+    // Remove undefined/null values
+    Object.keys(jobData).forEach(key => {
+      if (jobData[key] === undefined || jobData[key] === null || jobData[key] === '') {
+        delete jobData[key]
+      }
+    })
+
+    console.log('Processed job data:', JSON.stringify(jobData, null, 2))
 
     // Validate deadline is in future
     if (jobData.deadline <= new Date()) {
@@ -118,7 +141,10 @@ router.post('/', [
     }
 
     const job = new Job(jobData)
+    console.log('Job object created, attempting to save...')
+    
     await job.save()
+    console.log('Job saved successfully with ID:', job._id)
 
     const populatedJob = await Job.findById(job._id)
       .populate('companyId', 'name companyName')
@@ -129,12 +155,49 @@ router.post('/', [
     })
   } catch (error) {
     console.error('Create job error:', error)
-    res.status(500).json({ message: 'Server error' })
+    console.error('Error stack:', error.stack)
+    
+    // Send more detailed error information
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ 
+        message: 'Validation error',
+        details: error.message,
+        errors: Object.keys(error.errors).map(key => ({
+          field: key,
+          message: error.errors[key].message
+        }))
+      })
+    }
+    
+    res.status(500).json({ 
+      message: 'Server error creating job',
+      details: error.message 
+    })
   }
 })
 
-// Get company's jobs
-router.get('/company/mine', [
+// Debug endpoint for job creation
+router.post('/debug', [auth, authorize('company')], async (req, res) => {
+  try {
+    res.json({
+      user: {
+        id: req.user._id,
+        email: req.user.email,
+        role: req.user.role,
+        name: req.user.name,
+        companyName: req.user.companyName,
+        isActive: req.user.isActive
+      },
+      requestBody: req.body,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Get company's jobs  
+router.get('/company/me', [
   auth,
   authorize('company'),
   query('page').optional().isInt({ min: 1 }),

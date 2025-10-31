@@ -51,6 +51,13 @@ const Navbar = () => {
                   </Link>
                 )}
 
+                {user.role === 'admin' && (
+                  <Link to="/admin/users" className="text-gray-700 hover:text-blue-600 flex items-center">
+                    <User className="w-4 h-4 mr-1" />
+                    Manage Users
+                  </Link>
+                )}
+
                 <div className="flex items-center space-x-2">
                   <span className="text-sm text-gray-600">
                     {user.name} ({user.role})
