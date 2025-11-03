@@ -19,7 +19,7 @@ router.post('/register', [
   body('name').trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
   body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-  body('role').isIn(['student', 'company', 'admin']).withMessage('Invalid role')
+  body('role').isIn(['student', 'company', 'admin', 'faculty']).withMessage('Invalid role')
 ], async (req, res) => {
   try {
     const errors = validationResult(req)
@@ -44,7 +44,7 @@ router.post('/register', [
       email,
       password,
       role,
-      department: role === 'student' ? department : undefined,
+      department: (role === 'student' || role === 'faculty') ? department : undefined,
       companyName: role === 'company' ? companyName : undefined
     })
 
@@ -273,6 +273,46 @@ router.post('/reset-password', async (req, res) => {
   }
 })
 
+// Fix existing students without verification fields
+router.post('/fix-students', async (req, res) => {
+  try {
+    // Find students without verification fields
+    const studentsToFix = await User.find({
+      role: 'student',
+      $or: [
+        { verificationStatus: { $exists: false } },
+        { isVerified: { $exists: false } }
+      ]
+    })
+
+    let fixedCount = 0
+    for (const student of studentsToFix) {
+      await User.findByIdAndUpdate(student._id, {
+        isVerified: false,
+        verificationStatus: 'pending'
+      })
+      fixedCount++
+    }
+
+    // Get updated counts
+    const totalStudents = await User.countDocuments({ role: 'student' })
+    const pendingStudents = await User.countDocuments({ 
+      role: 'student', 
+      verificationStatus: 'pending' 
+    })
+
+    res.json({
+      message: `Fixed ${fixedCount} students`,
+      totalStudents,
+      pendingStudents,
+      fixedStudents: fixedCount
+    })
+  } catch (error) {
+    console.error('Fix students error:', error)
+    res.status(500).json({ message: 'Server error', error: error.message })
+  }
+})
+
 // Create default users (for initial setup)
 router.post('/create-defaults', async (req, res) => {
   try {
@@ -294,7 +334,23 @@ router.post('/create-defaults', async (req, res) => {
       existingUsers.push({ email: 'admin@portal.com', role: 'admin' })
     }
 
-    // Check and create Sample Student
+    // Check and create Sample Faculty
+    let faculty = await User.findOne({ email: 'faculty@test.com' })
+    if (!faculty) {
+      faculty = new User({
+        name: 'Dr. Sarah Wilson',
+        email: 'faculty@test.com',
+        password: 'faculty123',
+        role: 'faculty',
+        department: 'Computer Science'
+      })
+      await faculty.save()
+      createdUsers.push({ email: 'faculty@test.com', password: 'faculty123', role: 'faculty' })
+    } else {
+      existingUsers.push({ email: 'faculty@test.com', role: 'faculty' })
+    }
+
+    // Check and create Sample Student (unverified initially)
     let student = await User.findOne({ email: 'student@test.com' })
     if (!student) {
       student = new User({
@@ -302,7 +358,9 @@ router.post('/create-defaults', async (req, res) => {
         email: 'student@test.com',
         password: 'student123',
         role: 'student',
-        department: 'Computer Science'
+        department: 'Computer Science',
+        isVerified: false,
+        verificationStatus: 'pending'
       })
       await student.save()
       createdUsers.push({ email: 'student@test.com', password: 'student123', role: 'student' })
@@ -362,6 +420,7 @@ router.post('/create-defaults', async (req, res) => {
       existing: existingUsers,
       users: [
         { email: 'admin@portal.com', password: 'admin123', role: 'admin' },
+        { email: 'faculty@test.com', password: 'faculty123', role: 'faculty' },
         { email: 'student@test.com', password: 'student123', role: 'student' },
         { email: 'company@test.com', password: 'company123', role: 'company' }
       ]

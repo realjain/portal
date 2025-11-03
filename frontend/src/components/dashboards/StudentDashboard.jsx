@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import axios from 'axios'
+import { useAuth } from '../../contexts/AuthContext'
+import VerificationStatus from '../VerificationStatus'
+import StudentResumeSection from '../StudentResumeSection'
 import { Briefcase, FileText, User, CheckCircle } from 'lucide-react'
 
 const StudentDashboard = () => {
+  const { user } = useAuth()
   const [stats, setStats] = useState({
     applications: 0,
     interviews: 0,
@@ -48,6 +52,14 @@ const StudentDashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Verification Status */}
+      <VerificationStatus user={user} />
+
+      {/* Resume Upload Reminder & Quick View */}
+      {user && user.role === 'student' && (
+        <StudentResumeSection />
+      )}
+
       {/* Stats Cards */}
       <div className="grid md:grid-cols-3 gap-6">
         <div className="bg-white rounded-lg shadow-md p-6">

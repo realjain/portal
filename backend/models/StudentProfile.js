@@ -39,6 +39,7 @@ const studentProfileSchema = new mongoose.Schema({
     endDate: Date
   }],
   resumeUrl: String,
+  resumeFilename: String,
   linkedinUrl: String,
   githubUrl: String,
   portfolioUrl: String,

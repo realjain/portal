@@ -3,6 +3,7 @@ import { useForm, useFieldArray } from 'react-hook-form'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import { Plus, Trash2, Save, User, Award } from 'lucide-react'
+import ResumeUpload from '../components/ResumeUpload'
 
 const Profile = () => {
   const navigate = useNavigate()
@@ -303,21 +304,13 @@ const Profile = () => {
             </div>
           </div>
 
+          {/* Resume Upload */}
+          <ResumeUpload />
+
           {/* Links */}
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Links</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Additional Links</h3>
             <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Resume URL
-                </label>
-                <input
-                  type="url"
-                  {...register('resumeUrl')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="https://..."
-                />
-              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">

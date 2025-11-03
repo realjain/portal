@@ -2,6 +2,7 @@ import { useAuth } from '../contexts/AuthContext'
 import StudentDashboard from '../components/dashboards/StudentDashboard'
 import CompanyDashboard from '../components/dashboards/CompanyDashboard'
 import AdminDashboard from '../components/dashboards/AdminDashboard'
+import FacultyDashboard from '../components/dashboards/FacultyDashboard'
 
 const Dashboard = () => {
   const { user } = useAuth()
@@ -10,6 +11,8 @@ const Dashboard = () => {
     switch (user?.role) {
       case 'student':
         return <StudentDashboard />
+      case 'faculty':
+        return <FacultyDashboard />
       case 'company':
         return <CompanyDashboard />
       case 'admin':

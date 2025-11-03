@@ -39,7 +39,7 @@ goto menu
 
 :start_backend
 echo.
-echo Starting backend server...
+echo Starting backend server on port 5001...
 npm run server
 goto menu
 

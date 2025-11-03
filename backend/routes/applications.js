@@ -8,7 +8,7 @@ const { auth, authorize } = require('../middleware/auth')
 
 const router = express.Router()
 
-// Create application (student only)
+// Create application (student only - must be verified by faculty)
 router.post('/', [
   auth,
   authorize('student'),
@@ -25,6 +25,15 @@ router.post('/', [
       return res.status(400).json({ 
         message: 'Validation failed',
         errors: errors.array() 
+      })
+    }
+
+    // Check if student is verified by faculty
+    if (!req.user.isVerified || req.user.verificationStatus !== 'approved') {
+      return res.status(403).json({ 
+        message: 'You must be verified by faculty before applying for jobs',
+        verificationStatus: req.user.verificationStatus,
+        requiresVerification: true
       })
     }
 

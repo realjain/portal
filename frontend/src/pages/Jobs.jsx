@@ -106,25 +106,40 @@ const Jobs = () => {
         <div className="space-y-4">
           {jobs.length > 0 ? (
             jobs.map((job) => (
-              <div key={job._id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                      <Link to={`/jobs/${job._id}`} className="hover:text-blue-600">
-                        {job.title}
-                      </Link>
-                    </h2>
-                    <p className="text-gray-600 font-medium">
-                      {job.company || job.companyId?.companyName}
-                    </p>
+              <div key={job._id} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100">
+                <div className="flex items-start space-x-4 mb-4">
+                  {/* Company Logo Placeholder */}
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <span className="text-white font-bold text-xl">
+                      {(job.company || job.companyId?.companyName || 'C').charAt(0).toUpperCase()}
+                    </span>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    job.jobType === 'internship' ? 'bg-blue-100 text-blue-800' :
-                    job.jobType === 'full-time' ? 'bg-green-100 text-green-800' :
-                    'bg-purple-100 text-purple-800'
-                  }`}>
-                    {job.jobType.charAt(0).toUpperCase() + job.jobType.slice(1).replace('-', ' ')}
-                  </span>
+                  
+                  <div className="flex-1">
+                    <div className="flex justify-between items-start mb-2">
+                      <h2 className="text-xl font-bold text-gray-900">
+                        <Link to={`/jobs/${job._id}`} className="hover:text-blue-600 transition-colors">
+                          {job.title}
+                        </Link>
+                      </h2>
+                      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                        job.jobType === 'internship' ? 'bg-blue-100 text-blue-800' :
+                        job.jobType === 'full-time' ? 'bg-green-100 text-green-800' :
+                        'bg-purple-100 text-purple-800'
+                      }`}>
+                        {job.jobType.charAt(0).toUpperCase() + job.jobType.slice(1).replace('-', ' ')}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center mb-3">
+                      <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center mr-2">
+                        <span className="text-xs">🏢</span>
+                      </div>
+                      <p className="text-gray-700 font-medium">
+                        {job.company || job.companyId?.companyName}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 <p className="text-gray-700 mb-4 line-clamp-2">{job.description}</p>
@@ -164,16 +179,17 @@ const Jobs = () => {
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center mt-4">
+                <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-100">
                   <Link
                     to={`/jobs/${job._id}`}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    className="text-blue-600 hover:text-blue-800 font-medium flex items-center group"
                   >
-                    View Details →
+                    View Details 
+                    <span className="ml-1 group-hover:translate-x-1 transition-transform">→</span>
                   </Link>
                   <Link
                     to={`/jobs/${job._id}`}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm font-medium"
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg hover:from-blue-700 hover:to-purple-700 font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                   >
                     Apply Now
                   </Link>

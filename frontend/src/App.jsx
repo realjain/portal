@@ -79,7 +79,7 @@ function App() {
               <Settings />
             </ProtectedRoute>
           } />
-          
+
           <Route path="change-password" element={
             <ProtectedRoute>
               <ChangePassword />

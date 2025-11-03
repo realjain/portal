@@ -21,13 +21,13 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['student', 'company', 'admin'],
+    enum: ['student', 'company', 'admin', 'faculty'],
     required: true
   },
   department: {
     type: String,
     required: function() {
-      return this.role === 'student'
+      return this.role === 'student' || this.role === 'faculty'
     }
   },
   companyName: {
@@ -39,6 +39,30 @@ const userSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
+  },
+  // Faculty verification for students
+  isVerified: {
+    type: Boolean,
+    default: function() {
+      return this.role !== 'student' // Non-students are verified by default
+    }
+  },
+  verificationStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: function() {
+      return this.role === 'student' ? 'pending' : 'approved'
+    }
+  },
+  verifiedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User' // Reference to faculty who verified
+  },
+  verificationDate: {
+    type: Date
+  },
+  verificationNotes: {
+    type: String
   }
 }, {
   timestamps: true

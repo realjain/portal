@@ -100,7 +100,7 @@ const Applications = () => {
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                      <Link 
+                      <Link
                         to={`/jobs/${application.jobId._id}`}
                         className="hover:text-blue-600 flex items-center"
                       >
@@ -110,7 +110,7 @@ const Applications = () => {
                     </h3>
                     <p className="text-gray-600 font-medium">{application.jobId.company}</p>
                   </div>
-                  
+
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(application.stage)}`}>
                     {application.stage.charAt(0).toUpperCase() + application.stage.slice(1)}
                   </span>
@@ -121,7 +121,7 @@ const Applications = () => {
                     <MapPin className="w-4 h-4 mr-1" />
                     {application.jobId.location}
                   </div>
-                  
+
                   <div className="flex items-center">
                     <Calendar className="w-4 h-4 mr-1" />
                     Applied: {new Date(application.createdAt).toLocaleDateString()}
@@ -208,8 +208,8 @@ const Applications = () => {
             <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No Applications Found</h3>
             <p className="text-gray-600 mb-6">
-              {filter === 'all' 
-                ? "You haven't applied to any jobs yet." 
+              {filter === 'all'
+                ? "You haven't applied to any jobs yet."
                 : `No applications with status "${filter}".`}
             </p>
             <Link
@@ -228,11 +228,10 @@ const Applications = () => {
               <button
                 key={page}
                 onClick={() => handlePageChange(page)}
-                className={`px-4 py-2 rounded-md ${
-                  page === pagination.current
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                }`}
+                className={`px-4 py-2 rounded-md ${page === pagination.current
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  }`}
               >
                 {page}
               </button>

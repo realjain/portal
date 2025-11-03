@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quick PDF Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .step { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .success { background: #d4edda; color: #155724; padding: 10px; border-radius: 3px; margin: 10px 0; }
+        .error { background: #f8d7da; color: #721c24; padding: 10px; border-radius: 3px; margin: 10px 0; }
+        .info { background: #d1ecf1; color: #0c5460; padding: 10px; border-radius: 3px; margin: 10px 0; }
+        input[type="file"] { margin: 10px 0; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🚀 Quick PDF System Test</h1>
+    <p>This will test the complete PDF upload and viewing system.</p>
+
+    <div class="step">
+        <h3>Step 1: Test Backend Connection</h3>
+        <button onclick="testBackend()">🔧 Test Backend</button>
+        <div id="backendResult"></div>
+    </div>
+
+    <div class="step">
+        <h3>Step 2: Login as Student</h3>
+        <button onclick="loginStudent()">🔑 Login Student</button>
+        <div id="loginResult"></div>
+    </div>
+
+    <div class="step">
+        <h3>Step 3: Upload PDF Resume</h3>
+        <input type="file" id="pdfFile" accept=".pdf">
+        <button onclick="uploadPDF()">📤 Upload PDF</button>
+        <div id="uploadResult"></div>
+    </div>
+
+    <div class="step">
+        <h3>Step 4: Test PDF Viewing & Download</h3>
+        <button onclick="testPDFAccess()">👁️ Test View</button>
+        <button onclick="testPDFDownload()">📥 Test Download</button>
+        <div id="pdfTestResult"></div>
+    </div>
+
+    <script>
+        let token = '';
+        let pdfUrl = '';
+        const API_BASE = 'http://localhost:5001/api';
+
+        async function testBackend() {
+            try {
+                const response = await fetch(`${API_BASE}/upload/test`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('backendResult').innerHTML = 
+                        `<div class="success">✅ Backend is working!</div>
+                         <div class="info">
+                           <strong>Upload Directory:</strong> ${data.dirExists ? 'Exists' : 'Missing'}<br>
+                           <strong>Files:</strong> ${data.fileCount}<br>
+                           <strong>Server Time:</strong> ${data.serverTime}
+                         </div>`;
+                } else {
+                    document.getElementById('backendResult').innerHTML = 
+                        `<div class="error">❌ Backend test failed: ${data.message}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('backendResult').innerHTML = 
+                    `<div class="error">❌ Cannot connect to backend: ${error.message}</div>
+                     <p>Make sure your backend server is running on port 5001</p>`;
+            }
+        }
+
+        async function loginStudent() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'student@test.com',
+                        password: 'student123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    token = data.token;
+                    document.getElementById('loginResult').innerHTML = 
+                        `<div class="success">✅ Login successful!</div>
+                         <div class="info">
+                           <strong>Name:</strong> ${data.user.name}<br>
+                           <strong>Role:</strong> ${data.user.role}<br>
+                           <strong>Email:</strong> ${data.user.email}
+                         </div>`;
+                } else {
+                    document.getElementById('loginResult').innerHTML = 
+                        `<div class="error">❌ Login failed: ${data.message}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('loginResult').innerHTML = 
+                    `<div class="error">❌ Login error: ${error.message}</div>`;
+            }
+        }
+
+        async function uploadPDF() {
+            if (!token) {
+                alert('Please login first');
+                return;
+            }
+
+            const fileInput = document.getElementById('pdfFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a PDF file');
+                return;
+            }
+
+            if (file.type !== 'application/pdf') {
+                alert('Please select a PDF file only');
+                return;
+            }
+
+            try {
+                document.getElementById('uploadResult').innerHTML = 
+                    '<div class="info">⏳ Uploading PDF...</div>';
+
+                const formData = new FormData();
+                formData.append('resume', file);
+
+                const response = await fetch(`${API_BASE}/upload/resume`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    pdfUrl = data.resumeUrl;
+                    document.getElementById('uploadResult').innerHTML = 
+                        `<div class="success">✅ PDF uploaded successfully!</div>
+                         <div class="info">
+                           <strong>Filename:</strong> ${data.filename}<br>
+                           <strong>Size:</strong> ${(data.fileSize / 1024).toFixed(2)} KB<br>
+                           <strong>URL:</strong> ${data.resumeUrl}
+                         </div>`;
+                } else {
+                    document.getElementById('uploadResult').innerHTML = 
+                        `<div class="error">❌ Upload failed: ${data.message}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('uploadResult').innerHTML = 
+                    `<div class="error">❌ Upload error: ${error.message}</div>`;
+            }
+        }
+
+        async function testPDFAccess() {
+            if (!pdfUrl) {
+                alert('Please upload a PDF first');
+                return;
+            }
+
+            try {
+                const response = await fetch(pdfUrl);
+                
+                if (response.ok) {
+                    const contentType = response.headers.get('content-type');
+                    const contentLength = response.headers.get('content-length');
+                    
+                    // Try to read PDF header
+                    const arrayBuffer = await response.arrayBuffer();
+                    const uint8Array = new Uint8Array(arrayBuffer);
+                    const pdfHeader = String.fromCharCode(...uint8Array.slice(0, 4));
+                    
+                    document.getElementById('pdfTestResult').innerHTML = 
+                        `<div class="success">✅ PDF is accessible and valid!</div>
+                         <div class="info">
+                           <strong>Content-Type:</strong> ${contentType}<br>
+                           <strong>Size:</strong> ${(arrayBuffer.byteLength / 1024).toFixed(2)} KB<br>
+                           <strong>PDF Header:</strong> ${pdfHeader} ${pdfHeader === '%PDF' ? '✅' : '❌'}<br>
+                           <strong>URL:</strong> <a href="${pdfUrl}" target="_blank">${pdfUrl}</a>
+                         </div>
+                         <button onclick="window.open('${pdfUrl}', '_blank')" style="margin-top: 10px;">
+                           🔗 Open PDF in New Tab
+                         </button>`;
+                } else {
+                    const errorText = await response.text();
+                    document.getElementById('pdfTestResult').innerHTML = 
+                        `<div class="error">❌ PDF not accessible!</div>
+                         <p><strong>Status:</strong> ${response.status} ${response.statusText}</p>
+                         <p><strong>Error:</strong> ${errorText}</p>`;
+                }
+            } catch (error) {
+                document.getElementById('pdfTestResult').innerHTML = 
+                    `<div class="error">❌ PDF access error: ${error.message}</div>`;
+            }
+        }
+
+        async function testPDFDownload() {
+            if (!pdfUrl) {
+                alert('Please upload a PDF first');
+                return;
+            }
+
+            try {
+                const downloadUrl = `${pdfUrl}?download=true`;
+                
+                // Test download URL
+                const response = await fetch(downloadUrl);
+                
+                if (response.ok) {
+                    // Trigger download
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = 'test-resume.pdf';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    document.getElementById('pdfTestResult').innerHTML += 
+                        `<div class="success">✅ Download test successful!</div>
+                         <p>Check your Downloads folder for 'test-resume.pdf'</p>`;
+                } else {
+                    document.getElementById('pdfTestResult').innerHTML += 
+                        `<div class="error">❌ Download test failed!</div>
+                         <p><strong>Status:</strong> ${response.status} ${response.statusText}</p>`;
+                }
+            } catch (error) {
+                document.getElementById('pdfTestResult').innerHTML += 
+                    `<div class="error">❌ Download error: ${error.message}</div>`;
+            }
+        }
+
+        // Auto-test backend on page load
+        window.onload = function() {
+            testBackend();
+        };
+    </script>
+</body>
+</html>

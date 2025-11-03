@@ -25,13 +25,26 @@ const seedData = async () => {
     await admin.save()
     console.log('✅ Admin user created')
 
-    // Create Sample Student
+    // Create Faculty User
+    const faculty = new User({
+      name: 'Dr. Sarah Wilson',
+      email: 'faculty@test.com',
+      password: 'faculty123', // Let the pre-save hook handle hashing
+      role: 'faculty',
+      department: 'Computer Science'
+    })
+    await faculty.save()
+    console.log('✅ Faculty user created')
+
+    // Create Sample Student (unverified initially)
     const student = new User({
       name: 'John Doe',
       email: 'student@test.com',
       password: 'student123', // Let the pre-save hook handle hashing
       role: 'student',
-      department: 'Computer Science'
+      department: 'Computer Science',
+      isVerified: false,
+      verificationStatus: 'pending'
     })
     await student.save()
     console.log('✅ Student user created')
@@ -72,7 +85,8 @@ const seedData = async () => {
     console.log('\n🎉 Sample data created successfully!')
     console.log('\n🔑 Login Credentials:')
     console.log('Admin: admin@portal.com / admin123')
-    console.log('Student: student@test.com / student123')
+    console.log('Faculty: faculty@test.com / faculty123')
+    console.log('Student: student@test.com / student123 (pending verification)')
     console.log('Company: company@test.com / company123')
 
     process.exit(0)
