@@ -40,6 +40,7 @@ const studentProfileSchema = new mongoose.Schema({
   }],
   resumeUrl: String,
   resumeFilename: String,
+  cloudinaryPublicId: String, // Store Cloudinary public ID for deletion
   linkedinUrl: String,
   githubUrl: String,
   portfolioUrl: String,

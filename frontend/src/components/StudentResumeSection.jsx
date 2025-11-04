@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import axios from 'axios'
 import PDFViewer from './PDFViewer'
-import { Eye, Upload, FileText, AlertCircle, CheckCircle } from 'lucide-react'
+import { Eye, Upload, FileText, AlertCircle, CheckCircle, ExternalLink, Download } from 'lucide-react'
+import { generatePDFUrls, extractUserIdFromResumeUrl } from '../utils/pdfUtils'
 
 const StudentResumeSection = () => {
   const [resumeInfo, setResumeInfo] = useState({ hasResume: false })
@@ -73,15 +74,22 @@ const StudentResumeSection = () => {
                     <Eye className="w-4 h-4 mr-1" />
                     {showViewer ? 'Hide' : 'View'} Resume
                   </button>
-                  <a
-                    href={resumeInfo.resumeUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-800 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    <FileText className="w-4 h-4 mr-1" />
-                    Open in New Tab
-                  </a>
+                  {(() => {
+                    const userId = resumeInfo.userId || extractUserIdFromResumeUrl(resumeInfo.resumeUrl)
+                    const pdfUrls = generatePDFUrls(resumeInfo.resumeUrl, userId)
+                    
+                    return (
+                      <a
+                        href={pdfUrls.view}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-800 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      >
+                        <ExternalLink className="w-4 h-4 mr-1" />
+                        Open PDF
+                      </a>
+                    )
+                  })()}
                 </div>
               </div>
               
@@ -98,25 +106,32 @@ const StudentResumeSection = () => {
                     </button>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-                    <a 
-                      href={resumeInfo.resumeUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      <Eye className="w-5 h-5 mr-2" />
-                      View in New Tab
-                    </a>
-                    <a 
-                      href={`${resumeInfo.resumeUrl}?download=true`}
-                      download={resumeInfo.filename}
-                      className="flex items-center justify-center px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                    >
-                      <FileText className="w-5 h-5 mr-2" />
-                      Download PDF
-                    </a>
-                  </div>
+                  {(() => {
+                    const userId = resumeInfo.userId || extractUserIdFromResumeUrl(resumeInfo.resumeUrl)
+                    const pdfUrls = generatePDFUrls(resumeInfo.resumeUrl, userId)
+                    
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                        <a 
+                          href={pdfUrls.view} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          <ExternalLink className="w-5 h-5 mr-2" />
+                          View in New Tab
+                        </a>
+                        <a 
+                          href={pdfUrls.download}
+                          download={resumeInfo.filename}
+                          className="flex items-center justify-center px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                          <Download className="w-5 h-5 mr-2" />
+                          Download PDF
+                        </a>
+                      </div>
+                    )
+                  })()}
 
                   <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
                     <p><strong>File:</strong> {resumeInfo.filename}</p>

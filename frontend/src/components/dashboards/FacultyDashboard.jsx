@@ -502,36 +502,61 @@ const FacultyDashboard = () => {
                     <h4 className="font-semibold mb-3">Resume</h4>
                     {studentDetails.profile?.resumeUrl ? (
                       <div className="space-y-3">
-                        <div className="flex space-x-3">
-                          <a
-                            href={studentDetails.profile.resumeUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                          >
-                            📄 View Resume (New Tab)
-                          </a>
-                          <button
-                            onClick={() => setShowResumeViewer(!showResumeViewer)}
-                            className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                          >
-                            👁️ {showResumeViewer ? 'Hide' : 'Show'} Resume Here
-                          </button>
-                        </div>
-                        
-                        {showResumeViewer && (
-                          <div className="border rounded-lg overflow-hidden bg-white">
-                            <div className="bg-gray-100 px-4 py-2 text-sm text-gray-600">
-                              Resume Preview - {studentDetails.profile.resumeFilename || 'resume.pdf'}
-                            </div>
-                            <iframe
-                              src={studentDetails.profile.resumeUrl}
-                              className="w-full h-96"
-                              title="Student Resume"
-                              style={{ border: 'none' }}
-                            />
-                          </div>
-                        )}
+                        {(() => {
+                          // Use backend PDF endpoint for proper viewing
+                          // studentDetails.student._id is the user ID we need for the PDF endpoint
+                          const studentUserId = studentDetails.student?._id
+                          
+                          if (!studentUserId) {
+                            console.error('No student user ID found in studentDetails:', studentDetails)
+                            return <div className="text-red-600">Error: Cannot load PDF - missing student ID</div>
+                          }
+                          
+                          const viewUrl = `/api/upload/pdf/public/${studentUserId}`
+                          
+                          return (
+                            <>
+                              <div className="flex space-x-3">
+                                <a
+                                  href={viewUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                >
+                                  📄 View Resume (New Tab)
+                                </a>
+                                <button
+                                  onClick={() => setShowResumeViewer(!showResumeViewer)}
+                                  className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                                >
+                                  👁️ {showResumeViewer ? 'Hide' : 'Show'} Resume Here
+                                </button>
+                              </div>
+                              
+                              {showResumeViewer && (
+                                <div className="border rounded-lg overflow-hidden bg-white">
+                                  <div className="bg-gray-100 px-4 py-2 text-sm text-gray-600 flex justify-between items-center">
+                                    <span>Resume Preview - {studentDetails.profile.resumeFilename || 'resume.pdf'}</span>
+                                    <a
+                                      href={viewUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 hover:text-blue-800 text-sm"
+                                    >
+                                      Open in New Tab →
+                                    </a>
+                                  </div>
+                                  <iframe
+                                    src={viewUrl}
+                                    className="w-full h-96"
+                                    title="Student Resume"
+                                    style={{ border: 'none' }}
+                                  />
+                                </div>
+                              )}
+                            </>
+                          )
+                        })()}
                       </div>
                     ) : (
                       <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">

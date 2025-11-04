@@ -392,12 +392,12 @@ const ApplicationRow = ({
                 <div>
                   <h4 className="font-medium text-gray-900 mb-2">Resume</h4>
                   <a
-                    href={application.resumeUrl}
+                    href={`/api/upload/pdf/public/${application.userId}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-900 text-sm"
+                    className="inline-flex items-center text-blue-600 hover:text-blue-900 text-sm"
                   >
-                    View Resume
+                    📄 View Resume
                   </a>
                 </div>
               )}

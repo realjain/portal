@@ -3,6 +3,7 @@ const mongoose = require('mongoose')
 const cors = require('cors')
 const helmet = require('helmet')
 const rateLimit = require('express-rate-limit')
+const { testCloudinaryConnection } = require('./config/cloudinary')
 require('dotenv').config()
 
 const authRoutes = require('./routes/auth')
@@ -41,8 +42,18 @@ app.use(express.urlencoded({ extended: true }))
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/placement-portal')
 
-mongoose.connection.on('connected', () => {
+mongoose.connection.on('connected', async () => {
   console.log('Connected to MongoDB')
+  
+  // Test Cloudinary connection
+  console.log('Testing Cloudinary connection...')
+  const cloudinaryConnected = await testCloudinaryConnection()
+  if (cloudinaryConnected) {
+    console.log('✅ Cloudinary is ready for file uploads')
+  } else {
+    console.log('⚠️  Cloudinary not configured - check your environment variables')
+    console.log('Required: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET')
+  }
 })
 
 mongoose.connection.on('error', (err) => {

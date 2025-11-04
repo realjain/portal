@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Cloudinary 401 Error</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .step {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border: 1px solid #bee5eb;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border: 1px solid #ffeaa7;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+            padding: 10px;
+            border: 2px dashed #ddd;
+            border-radius: 5px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .url-test {
+            word-break: break-all;
+            font-family: monospace;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 3px;
+            border: 1px solid #e9ecef;
+            margin: 10px 0;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Cloudinary 401 Error Diagnosis</h1>
+        <p>Diagnose and fix the 401 Unauthorized error when accessing PDF files</p>
+
+        <div class="error">
+            <h4>❌ Current Issue:</h4>
+            <p><strong>Error:</strong> Failed to load resource: the server responded with a status of 401 ()</p>
+            <p><strong>Cause:</strong> Cloudinary access permissions or account restrictions</p>
+        </div>
+
+        <div class="step">
+            <h3>Step 1: Check System Status</h3>
+            <button onclick="checkSystemStatus()">🔍 Check Backend Status</button>
+            <div id="statusResult"></div>
+        </div>
+
+        <div class="step">
+            <h3>Step 2: Test Upload & Get URL</h3>
+            <button onclick="login()">🔑 Login</button>
+            <input type="file" id="testFile" accept=".pdf">
+            <button onclick="uploadAndTest()">☁️ Upload & Test</button>
+            <div id="uploadResult"></div>
+        </div>
+
+        <div class="step">
+            <h3>Step 3: Test Different URL Formats</h3>
+            <button onclick="testUrlFormats()">🌐 Test URL Variations</button>
+            <div id="urlTestResult"></div>
+        </div>
+
+        <div class="step">
+            <h3>Step 4: Possible Solutions</h3>
+            <div class="info">
+                <h4>🔧 Potential Fixes:</h4>
+                <ol>
+                    <li><strong>Cloudinary Account Settings:</strong> Check if your account has public access restrictions</li>
+                    <li><strong>Resource Type:</strong> Try different resource types (raw, auto, image)</li>
+                    <li><strong>Access Mode:</strong> Ensure files are uploaded with public access</li>
+                    <li><strong>Signed URLs:</strong> Use signed URLs for private resources</li>
+                    <li><strong>CORS Settings:</strong> Check Cloudinary CORS configuration</li>
+                </ol>
+            </div>
+            <button onclick="tryFixes()">🛠️ Try Automatic Fixes</button>
+            <div id="fixResult"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5001/api';
+        let token = '';
+        let testPdfUrl = '';
+
+        async function checkSystemStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/upload/test`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('statusResult').innerHTML = 
+                        `<div class="success">✅ Backend Status: Working</div>
+                         <div class="info">
+                           <strong>Cloudinary:</strong> ${data.cloudinary.connected ? '✅ Connected' : '❌ Disconnected'}<br>
+                           <strong>Configuration:</strong> ${data.cloudinary.configured ? '✅ Configured' : '❌ Missing'}<br>
+                           <strong>Server:</strong> ${data.serverInfo.nodeVersion} on ${data.serverInfo.platform}
+                         </div>`;
+                } else {
+                    document.getElementById('statusResult').innerHTML = 
+                        `<div class="error">❌ Backend Error: ${data.message}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('statusResult').innerHTML = 
+                    `<div class="error">❌ Connection Error: ${error.message}</div>`;
+            }
+        }
+
+        async function login() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'student@test.com',
+                        password: 'student123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    token = data.token;
+                    console.log('Login successful');
+                } else {
+                    alert('Login failed: ' + data.message);
+                }
+            } catch (error) {
+                alert('Login error: ' + error.message);
+            }
+        }
+
+        async function uploadAndTest() {
+            if (!token) {
+                await login();
+                if (!token) return;
+            }
+
+            const fileInput = document.getElementById('testFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a PDF file');
+                return;
+            }
+
+            try {
+                document.getElementById('uploadResult').innerHTML = 
+                    '<div class="info">⏳ Uploading and testing...</div>';
+
+                const formData = new FormData();
+                formData.append('resume', file);
+
+                const response = await fetch(`${API_BASE}/upload/resume`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    testPdfUrl = data.resumeUrl;
+                    
+                    document.getElementById('uploadResult').innerHTML = 
+                        `<div class="success">✅ Upload successful!</div>
+                         <div class="info">
+                           <strong>Cloudinary URL:</strong>
+                           <div class="url-test">${data.resumeUrl}</div>
+                         </div>`;
+                    
+                    // Test the URL immediately
+                    await testUrlAccess(data.resumeUrl);
+                    
+                } else {
+                    document.getElementById('uploadResult').innerHTML = 
+                        `<div class="error">❌ Upload failed: ${data.message}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('uploadResult').innerHTML = 
+                    `<div class="error">❌ Upload error: ${error.message}</div>`;
+            }
+        }
+
+        async function testUrlAccess(url) {
+            try {
+                console.log('Testing URL:', url);
+                
+                // Test with fetch
+                const response = await fetch(url, { method: 'HEAD' });
+                
+                let result = '';
+                if (response.ok) {
+                    result = `<div class="success">✅ URL Access: Working (${response.status})</div>`;
+                } else {
+                    result = `<div class="error">❌ URL Access: Failed (${response.status})</div>`;
+                    
+                    if (response.status === 401) {
+                        result += `<div class="warning">
+                                     <strong>401 Unauthorized:</strong> This is the issue!<br>
+                                     Possible causes:<br>
+                                     • Cloudinary account restrictions<br>
+                                     • File uploaded as private<br>
+                                     • Account plan limitations<br>
+                                     • CORS policy restrictions
+                                   </div>`;
+                    }
+                }
+                
+                document.getElementById('uploadResult').innerHTML += result;
+                
+                // Try opening in new tab
+                result += `<div class="info">
+                             <a href="${url}" target="_blank" style="color: #0c5460;">
+                               🔗 Try Opening in New Tab
+                             </a>
+                           </div>`;
+                
+                document.getElementById('uploadResult').innerHTML += result;
+                
+            } catch (error) {
+                document.getElementById('uploadResult').innerHTML += 
+                    `<div class="error">❌ URL Test Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testUrlFormats() {
+            if (!testPdfUrl) {
+                alert('Please upload a file first');
+                return;
+            }
+
+            const baseUrl = testPdfUrl;
+            const variations = [
+                { name: 'Original URL', url: baseUrl },
+                { name: 'With fl_attachment', url: baseUrl.replace('/upload/', '/upload/fl_attachment/') },
+                { name: 'With f_auto', url: baseUrl.replace('/upload/', '/upload/f_auto/') },
+                { name: 'Force HTTPS', url: baseUrl.replace('http://', 'https://') }
+            ];
+
+            let html = '<div class="info"><h4>🧪 Testing URL Variations:</h4></div>';
+            
+            for (const variation of variations) {
+                try {
+                    const response = await fetch(variation.url, { method: 'HEAD' });
+                    const status = response.status;
+                    const statusClass = status === 200 ? 'success' : 'error';
+                    
+                    html += `<div class="${statusClass}">
+                               <strong>${variation.name}:</strong> ${status}<br>
+                               <small>${variation.url}</small>
+                             </div>`;
+                } catch (error) {
+                    html += `<div class="error">
+                               <strong>${variation.name}:</strong> Error<br>
+                               <small>${error.message}</small>
+                             </div>`;
+                }
+            }
+            
+            document.getElementById('urlTestResult').innerHTML = html;
+        }
+
+        async function tryFixes() {
+            document.getElementById('fixResult').innerHTML = 
+                `<div class="info">
+                   <h4>🛠️ Recommended Actions:</h4>
+                   <ol>
+                     <li><strong>Check Cloudinary Dashboard:</strong> Go to Settings → Security and ensure public access is enabled</li>
+                     <li><strong>Verify Account Plan:</strong> Free accounts may have restrictions</li>
+                     <li><strong>Update Upload Config:</strong> Try resource_type: 'auto' instead of 'raw'</li>
+                     <li><strong>Use Signed URLs:</strong> For private resources, generate signed URLs</li>
+                     <li><strong>Check CORS:</strong> Add your domain to Cloudinary CORS settings</li>
+                   </ol>
+                   <p><strong>Next Step:</strong> Try uploading a new file with the updated configuration</p>
+                 </div>`;
+        }
+
+        // Auto-check status on load
+        window.onload = function() {
+            checkSystemStatus();
+        };
+    </script>
+</body>
+</html>

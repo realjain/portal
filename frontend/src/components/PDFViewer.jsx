@@ -38,9 +38,20 @@ const PDFViewer = ({ pdfUrl, filename = 'document.pdf', className = '' }) => {
         return `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(fullUrl)}`
       case 'google':
         return `https://docs.google.com/viewer?url=${encodeURIComponent(fullUrl)}&embedded=true`
+      case 'cloudinary':
+        // For Cloudinary URLs, ensure proper viewing format
+        if (fullUrl.includes('cloudinary.com')) {
+          // Remove attachment flag for inline viewing
+          return fullUrl.replace('/upload/fl_attachment/', '/upload/')
+        }
+        return fullUrl
       case 'direct':
       default:
-        return pdfUrl
+        // For direct viewing, ensure proper format
+        if (fullUrl.includes('cloudinary.com')) {
+          return fullUrl.replace('/upload/fl_attachment/', '/upload/')
+        }
+        return fullUrl
     }
   }
 
@@ -100,6 +111,7 @@ const PDFViewer = ({ pdfUrl, filename = 'document.pdf', className = '' }) => {
             className="text-sm border border-gray-300 rounded px-2 py-1"
           >
             <option value="direct">Direct View</option>
+            <option value="cloudinary">Cloudinary Optimized</option>
             <option value="pdfjs">PDF.js Viewer</option>
             <option value="google">Google Docs Viewer</option>
           </select>

@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Final PDF Upload Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .step {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border: 1px solid #bee5eb;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border: 1px solid #ffeaa7;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+            padding: 10px;
+            border: 2px dashed #ddd;
+            border-radius: 5px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .pdf-viewer {
+            width: 100%;
+            height: 500px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .url-display {
+            word-break: break-all;
+            font-family: monospace;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 3px;
+            border: 1px solid #e9ecef;
+            margin: 10px 0;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Final PDF Upload & Viewing Test</h1>
+        <p>Complete test of the fixed Cloudinary PDF system</p>
+
+        <div class="info">
+            <h4>✅ Issues Fixed:</h4>
+            <ul>
+                <li>❌ Removed problematic "image" resource type uploads</li>
+                <li>✅ Using "raw" resource type (correct for PDFs)</li>
+                <li>✅ Proper access permissions (no ACL failures)</li>
+                <li>✅ Clean database (no broken entries)</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3>Step 1: System Status Check</h3>
+            <button onclick="checkSystemStatus()">🔍 Check System Status</button>
+            <div id="statusResult"></div>
+        </div>
+
+        <div class="step">
+            <h3>Step 2: Login</h3>
+            <button onclick="login()">🔑 Login as Student</button>
+            <div id="loginResult"></div>
+        </div>
+
+        <div class="step">
+            <h3>Step 3: Upload PDF Resume</h3>
+            <input type="file" id="resumeFile" accept=".pdf">
+            <button onclick="uploadResume()">☁️ Upload to Cloudinary (Fixed Config)</button>
+            <div id="uploadResult"></div>
+        </div>
+
+        <div class="step">
+            <h3>Step 4: Test PDF Access</h3>
+            <button onclick="testPdfAccess()">🌐 Test Direct URL Access</button>
+            <button onclick="testPdfViewing()">📄 Test PDF Viewing</button>
+            <div id="accessResult"></div>
+            <div id="pdfViewer"></div>
+        </div>
+
+        <div class="step">
+            <h3>Step 5: Verify Database Storage</h3>
+            <button onclick="verifyDatabase()">🗄️ Check Database Entry</button>
+            <div id="databaseResult"></div>
+        </div>
+
+        <div class="step">
+            <h3>Step 6: Test API Endpoint</h3>
+            <button onclick="testApiEndpoint()">🔗 Test Resume API</button>
+            <div id="apiResult"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5001/api';
+        let token = '';
+        let uploadedPdfUrl = '';
+        let userId = '';
+
+        async function checkSystemStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/upload/test`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('statusResult').innerHTML = 
+                        `<div class="success">✅ System Status: All Good!</div>
+                         <div class="info">
+                           <strong>Cloudinary:</strong> ${data.cloudinary.connected ? '✅ Connected' : '❌ Disconnected'}<br>
+                           <strong>Configuration:</strong> ${data.cloudinary.configured ? '✅ Configured' : '❌ Not Configured'}<br>
+                           <strong>Local Files:</strong> ${data.localStorage.fileCount} files<br>
+                           <strong>Server Time:</strong> ${data.serverInfo.serverTime}
+                         </div>`;
+                } else {
+                    document.getElementById('statusResult').innerHTML = 
+                        `<div class="error">❌ System check failed: ${data.message}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('statusResult').innerHTML = 
+                    `<div class="error">❌ System check error: ${error.message}</div>`;
+            }
+        }
+
+        async function login() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'student@test.com',
+                        password: 'student123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    token = data.token;
+                    userId = data.user._id;
+                    document.getElementById('loginResult').innerHTML = 
+                        `<div class="success">✅ Login successful!</div>
+                         <div class="info">
+                           <strong>Name:</strong> ${data.user.name}<br>
+                           <strong>Email:</strong> ${data.user.email}<br>
+                           <strong>User ID:</strong> ${data.user._id}
+                         </div>`;
+                } else {
+                    document.getElementById('loginResult').innerHTML = 
+                        `<div class="error">❌ Login failed: ${data.message}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('loginResult').innerHTML = 
+                    `<div class="error">❌ Login error: ${error.message}</div>`;
+            }
+        }
+
+        async function uploadResume() {
+            if (!token) {
+                alert('Please login first');
+                return;
+            }
+
+            const fileInput = document.getElementById('resumeFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a PDF file');
+                return;
+            }
+
+            try {
+                document.getElementById('uploadResult').innerHTML = 
+                    '<div class="info">⏳ Uploading with fixed configuration...</div>';
+
+                const formData = new FormData();
+                formData.append('resume', file);
+
+                const response = await fetch(`${API_BASE}/upload/resume`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    uploadedPdfUrl = data.resumeUrl;
+                    const resourceType = data.resumeUrl.includes('/raw/upload/') ? 'raw ✅' : 
+                                       data.resumeUrl.includes('/image/upload/') ? 'image ❌' : 'unknown';
+                    
+                    document.getElementById('uploadResult').innerHTML = 
+                        `<div class="success">✅ Upload successful with fixed config!</div>
+                         <div class="info">
+                           <strong>Filename:</strong> ${data.filename}<br>
+                           <strong>Size:</strong> ${(data.fileSize / 1024).toFixed(2)} KB<br>
+                           <strong>Resource Type:</strong> ${resourceType}<br>
+                           <strong>Public ID:</strong> ${data.publicId}<br>
+                           <strong>Cloudinary URL:</strong>
+                           <div class="url-display">${data.resumeUrl}</div>
+                         </div>`;
+                    
+                    if (data.resumeUrl.includes('/raw/upload/')) {
+                        document.getElementById('uploadResult').innerHTML += 
+                            '<div class="success">🎉 Perfect! Using RAW resource type - PDFs will work properly!</div>';
+                    } else {
+                        document.getElementById('uploadResult').innerHTML += 
+                            '<div class="warning">⚠️ Warning: Not using RAW resource type - may have access issues</div>';
+                    }
+                } else {
+                    document.getElementById('uploadResult').innerHTML = 
+                        `<div class="error">❌ Upload failed: ${data.message}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('uploadResult').innerHTML = 
+                    `<div class="error">❌ Upload error: ${error.message}</div>`;
+            }
+        }
+
+        async function testPdfAccess() {
+            if (!uploadedPdfUrl) {
+                alert('Please upload a file first');
+                return;
+            }
+
+            try {
+                document.getElementById('accessResult').innerHTML = 
+                    '<div class="info">⏳ Testing PDF URL access...</div>';
+
+                const response = await fetch(uploadedPdfUrl, { method: 'HEAD' });
+                
+                if (response.ok) {
+                    const contentType = response.headers.get('content-type');
+                    const contentLength = response.headers.get('content-length');
+                    const accessControl = response.headers.get('access-control-allow-origin');
+                    
+                    document.getElementById('accessResult').innerHTML = 
+                        `<div class="success">✅ PDF URL is accessible!</div>
+                         <div class="info">
+                           <strong>Status:</strong> ${response.status} ${response.statusText}<br>
+                           <strong>Content-Type:</strong> ${contentType}<br>
+                           <strong>Content-Length:</strong> ${contentLength} bytes<br>
+                           <strong>CORS:</strong> ${accessControl || 'Not set'}<br>
+                           <strong>Access:</strong> ${response.status === 200 ? '✅ Public' : '❌ Restricted'}
+                         </div>
+                         <div class="success">
+                           <a href="${uploadedPdfUrl}" target="_blank" style="color: #155724; text-decoration: underline;">
+                             🔗 Open PDF in New Tab
+                           </a>
+                         </div>`;
+                } else {
+                    document.getElementById('accessResult').innerHTML = 
+                        `<div class="error">❌ PDF URL not accessible!</div>
+                         <div class="info">
+                           <strong>Status:</strong> ${response.status} ${response.statusText}<br>
+                           <strong>Error:</strong> ${response.headers.get('x-cld-error') || 'Unknown error'}
+                         </div>`;
+                }
+            } catch (error) {
+                document.getElementById('accessResult').innerHTML = 
+                    `<div class="error">❌ Access test error: ${error.message}</div>`;
+            }
+        }
+
+        function testPdfViewing() {
+            if (!uploadedPdfUrl) {
+                alert('Please upload a file first');
+                return;
+            }
+
+            // Create iframe to test PDF viewing
+            const iframe = document.createElement('iframe');
+            iframe.src = uploadedPdfUrl;
+            iframe.className = 'pdf-viewer';
+            iframe.onload = function() {
+                document.getElementById('accessResult').innerHTML += 
+                    '<div class="success">✅ PDF loaded in iframe successfully!</div>';
+            };
+            iframe.onerror = function() {
+                document.getElementById('accessResult').innerHTML += 
+                    '<div class="error">❌ PDF failed to load in iframe</div>';
+            };
+
+            document.getElementById('pdfViewer').innerHTML = '';
+            document.getElementById('pdfViewer').appendChild(iframe);
+        }
+
+        async function verifyDatabase() {
+            if (!token) {
+                alert('Please login first');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/upload/resume-info`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    if (data.hasResume) {
+                        const resourceType = data.resumeUrl.includes('/raw/upload/') ? 'raw ✅' : 
+                                           data.resumeUrl.includes('/image/upload/') ? 'image ❌' : 'unknown';
+                        
+                        document.getElementById('databaseResult').innerHTML = 
+                            `<div class="success">✅ Resume found in database!</div>
+                             <div class="info">
+                               <strong>Has Resume:</strong> ${data.hasResume}<br>
+                               <strong>Filename:</strong> ${data.filename}<br>
+                               <strong>Resource Type:</strong> ${resourceType}<br>
+                               <strong>Database URL:</strong>
+                               <div class="url-display">${data.resumeUrl}</div>
+                             </div>`;
+                    } else {
+                        document.getElementById('databaseResult').innerHTML = 
+                            `<div class="warning">⚠️ No resume found in database</div>`;
+                    }
+                } else {
+                    document.getElementById('databaseResult').innerHTML = 
+                        `<div class="error">❌ Database check failed: ${data.message}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('databaseResult').innerHTML = 
+                    `<div class="error">❌ Database error: ${error.message}</div>`;
+            }
+        }
+
+        async function testApiEndpoint() {
+            if (!userId) {
+                alert('Please login first');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/upload/resume/${userId}`);
+                
+                if (response.ok) {
+                    // If it's a redirect, show success
+                    document.getElementById('apiResult').innerHTML = 
+                        `<div class="success">✅ API endpoint working!</div>
+                         <div class="info">
+                           <strong>Status:</strong> ${response.status} ${response.statusText}<br>
+                           <strong>API URL:</strong> ${API_BASE}/upload/resume/${userId}<br>
+                           <strong>Result:</strong> Redirects to Cloudinary URL
+                         </div>
+                         <div class="success">
+                           <a href="${API_BASE}/upload/resume/${userId}" target="_blank" style="color: #155724; text-decoration: underline;">
+                             🔗 Test API Endpoint
+                           </a>
+                         </div>`;
+                } else {
+                    const data = await response.json();
+                    document.getElementById('apiResult').innerHTML = 
+                        `<div class="error">❌ API endpoint failed!</div>
+                         <div class="info">
+                           <strong>Status:</strong> ${response.status} ${response.statusText}<br>
+                           <strong>Message:</strong> ${data.message}
+                         </div>`;
+                }
+            } catch (error) {
+                document.getElementById('apiResult').innerHTML = 
+                    `<div class="error">❌ API test error: ${error.message}</div>`;
+            }
+        }
+
+        // Auto-run system check on page load
+        window.onload = function() {
+            checkSystemStatus();
+        };
+    </script>
+</body>
+</html>

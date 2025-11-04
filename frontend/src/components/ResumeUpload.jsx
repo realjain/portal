@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Upload, FileText, Trash2, Eye, Download, AlertCircle } from 'lucide-react'
+import { Upload, FileText, Trash2, Eye, Download, AlertCircle, ExternalLink } from 'lucide-react'
+import { generatePDFUrls, extractUserIdFromResumeUrl } from '../utils/pdfUtils'
 
 const ResumeUpload = ({ className = '' }) => {
   const [resumeInfo, setResumeInfo] = useState({ hasResume: false })
@@ -153,29 +154,38 @@ const ResumeUpload = ({ className = '' }) => {
               </div>
             </div>
             <div className="flex space-x-2">
-              <a
-                href={resumeInfo.resumeUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-              >
-                <Eye className="w-4 h-4 mr-1" />
-                View (New Tab)
-              </a>
-              <button
-                onClick={() => setShowResumeViewer(!showResumeViewer)}
-                className="inline-flex items-center px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
-              >
-                <Eye className="w-4 h-4 mr-1" />
-                {showResumeViewer ? 'Hide' : 'View'} Here
-              </button>
-              <button
-                onClick={deleteResume}
-                className="inline-flex items-center px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
-              >
-                <Trash2 className="w-4 h-4 mr-1" />
-                Delete
-              </button>
+              {(() => {
+                const userId = resumeInfo.userId || extractUserIdFromResumeUrl(resumeInfo.resumeUrl)
+                const pdfUrls = generatePDFUrls(resumeInfo.resumeUrl, userId)
+                
+                return (
+                  <>
+                    <a
+                      href={pdfUrls.view}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                    >
+                      <ExternalLink className="w-4 h-4 mr-1" />
+                      View PDF
+                    </a>
+                    <button
+                      onClick={() => setShowResumeViewer(!showResumeViewer)}
+                      className="inline-flex items-center px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      {showResumeViewer ? 'Hide' : 'Preview'}
+                    </button>
+                    <button
+                      onClick={deleteResume}
+                      className="inline-flex items-center px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Delete
+                    </button>
+                  </>
+                )
+              })()}
             </div>
           </div>
 
@@ -209,25 +219,32 @@ const ResumeUpload = ({ className = '' }) => {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-                  <a 
-                    href={resumeInfo.resumeUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    <Eye className="w-5 h-5 mr-2" />
-                    Open in New Tab
-                  </a>
-                  <a 
-                    href={`${resumeInfo.resumeUrl}?download=true`}
-                    download={resumeInfo.filename}
-                    className="flex items-center justify-center px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                  >
-                    <Download className="w-5 h-5 mr-2" />
-                    Download PDF
-                  </a>
-                </div>
+                {(() => {
+                  const userId = resumeInfo.userId || extractUserIdFromResumeUrl(resumeInfo.resumeUrl)
+                  const pdfUrls = generatePDFUrls(resumeInfo.resumeUrl, userId)
+                  
+                  return (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                      <a 
+                        href={pdfUrls.view} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <ExternalLink className="w-5 h-5 mr-2" />
+                        Open in New Tab
+                      </a>
+                      <a 
+                        href={pdfUrls.download}
+                        download={resumeInfo.filename}
+                        className="flex items-center justify-center px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        <Download className="w-5 h-5 mr-2" />
+                        Download PDF
+                      </a>
+                    </div>
+                  )
+                })()}
 
                 {/* PDF Info */}
                 <div className="bg-gray-50 rounded-lg p-3">
@@ -242,27 +259,34 @@ const ResumeUpload = ({ className = '' }) => {
                   <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900">
                     🔧 Try Embedded View (May Not Work)
                   </summary>
-                  <div className="mt-3 border rounded-lg overflow-hidden">
-                    <iframe
-                      src={resumeInfo.resumeUrl}
-                      className="w-full h-64"
-                      title="Resume Preview"
-                      style={{ border: 'none' }}
-                    >
-                      <div className="p-4 text-center bg-gray-100">
-                        <p className="text-gray-600 mb-2">Your browser cannot display this PDF.</p>
-                        <a 
-                          href={resumeInfo.resumeUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  {(() => {
+                    const userId = resumeInfo.userId || extractUserIdFromResumeUrl(resumeInfo.resumeUrl)
+                    const pdfUrls = generatePDFUrls(resumeInfo.resumeUrl, userId)
+                    
+                    return (
+                      <div className="mt-3 border rounded-lg overflow-hidden">
+                        <iframe
+                          src={pdfUrls.viewer}
+                          className="w-full h-64"
+                          title="Resume Preview"
+                          style={{ border: 'none' }}
                         >
-                          <Eye className="w-4 h-4 mr-2" />
-                          Open in New Tab
-                        </a>
+                          <div className="p-4 text-center bg-gray-100">
+                            <p className="text-gray-600 mb-2">Your browser cannot display this PDF.</p>
+                            <a 
+                              href={pdfUrls.view} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                            >
+                              <ExternalLink className="w-4 h-4 mr-2" />
+                              Open in New Tab
+                            </a>
+                          </div>
+                        </iframe>
                       </div>
-                    </iframe>
-                  </div>
+                    )
+                  })()}
                 </details>
               </div>
             </div>
