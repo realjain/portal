@@ -96,7 +96,28 @@ const StudentDashboard = () => {
       {/* Quick Actions */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-4 gap-4">
+          {user?.isVerified && user?.verificationStatus === 'approved' ? (
+            <Link
+              to="/jobs/matched"
+              className="flex items-center p-4 border border-green-200 bg-green-50 rounded-lg hover:bg-green-100 transition"
+            >
+              <CheckCircle className="w-6 h-6 text-green-600 mr-3" />
+              <div>
+                <span className="font-medium text-green-800">Matched Jobs</span>
+                <p className="text-xs text-green-600">Based on your skills</p>
+              </div>
+            </Link>
+          ) : (
+            <div className="flex items-center p-4 border border-gray-200 bg-gray-50 rounded-lg opacity-75">
+              <Briefcase className="w-6 h-6 text-gray-400 mr-3" />
+              <div>
+                <span className="font-medium text-gray-500">Matched Jobs</span>
+                <p className="text-xs text-gray-400">Requires verification</p>
+              </div>
+            </div>
+          )}
+          
           <Link
             to="/jobs"
             className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition"

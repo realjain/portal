@@ -7,6 +7,7 @@ import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Jobs from './pages/Jobs'
 import JobDetail from './pages/JobDetail'
+import SkillMatchedJobs from './components/SkillMatchedJobs'
 import Profile from './pages/Profile'
 import Applications from './pages/Applications'
 import CompanyJobs from './pages/CompanyJobs'
@@ -28,6 +29,11 @@ function App() {
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Register />} />
           <Route path="jobs" element={<Jobs />} />
+          <Route path="jobs/matched" element={
+            <ProtectedRoute roles={['student']}>
+              <SkillMatchedJobs />
+            </ProtectedRoute>
+          } />
           <Route path="jobs/:id" element={<JobDetail />} />
 
           <Route path="dashboard" element={

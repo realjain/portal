@@ -10,7 +10,8 @@ import {
   Home,
   BarChart3,
   Users,
-  Building2
+  Building2,
+  CheckCircle
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -83,6 +84,15 @@ const Navbar = () => {
                 
                 {user.role === 'student' && (
                   <>
+                    {user.isVerified && user.verificationStatus === 'approved' && (
+                      <Link 
+                        to="/jobs/matched" 
+                        className="flex items-center text-gray-700 hover:text-blue-600 transition-colors duration-200 font-medium"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Matched Jobs
+                      </Link>
+                    )}
                     <Link 
                       to="/profile" 
                       className="flex items-center text-gray-700 hover:text-blue-600 transition-colors duration-200 font-medium"

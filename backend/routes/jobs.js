@@ -2,6 +2,8 @@ const express = require('express')
 const { body, validationResult, query } = require('express-validator')
 const Job = require('../models/Job')
 const Application = require('../models/Application')
+const StudentProfile = require('../models/StudentProfile')
+const User = require('../models/User')
 const { auth, authorize } = require('../middleware/auth')
 
 const router = express.Router()
@@ -316,5 +318,217 @@ router.delete('/:id', [auth, authorize('company')], async (req, res) => {
     res.status(500).json({ message: 'Server error' })
   }
 })
+
+// Get skill-matched jobs for verified students
+router.get('/matched', [auth, authorize('student')], async (req, res) => {
+  try {
+    // Check if student is verified
+    if (!req.user.isVerified || req.user.verificationStatus !== 'approved') {
+      return res.status(403).json({ 
+        message: 'You must be verified by faculty to view matched jobs',
+        verificationStatus: req.user.verificationStatus,
+        requiresVerification: true
+      })
+    }
+
+    // Get student profile
+    const profile = await StudentProfile.findOne({ userId: req.user._id })
+    if (!profile || !profile.skills || profile.skills.length === 0) {
+      return res.json({
+        jobs: [],
+        message: 'Complete your profile with skills to see matched jobs',
+        totalJobs: 0,
+        matchedJobs: 0,
+        skillsNeeded: true
+      })
+    }
+
+    // Get all open jobs
+    const allJobs = await Job.find({ 
+      status: 'open', 
+      deadline: { $gte: new Date() } 
+    }).populate('companyId', 'name companyName')
+
+    // Calculate skill matches for each job
+    const jobsWithMatches = allJobs.map(job => {
+      const jobObj = job.toObject()
+      
+      if (!job.requiredSkills || job.requiredSkills.length === 0) {
+        return {
+          ...jobObj,
+          matchingSkills: [],
+          missingSkills: [],
+          matchPercentage: 0,
+          isEligible: checkJobEligibility(profile, job.eligibility),
+          skillMatch: false
+        }
+      }
+
+      // Find matching skills
+      const matchingSkills = profile.skills.filter(skill => 
+        job.requiredSkills.some(reqSkill => 
+          reqSkill.toLowerCase().includes(skill.toLowerCase()) ||
+          skill.toLowerCase().includes(reqSkill.toLowerCase())
+        )
+      )
+
+      // Find missing skills
+      const missingSkills = job.requiredSkills.filter(reqSkill =>
+        !profile.skills.some(skill =>
+          reqSkill.toLowerCase().includes(skill.toLowerCase()) ||
+          skill.toLowerCase().includes(reqSkill.toLowerCase())
+        )
+      )
+
+      const matchPercentage = Math.round((matchingSkills.length / job.requiredSkills.length) * 100)
+      const isEligible = checkJobEligibility(profile, job.eligibility)
+      const skillMatch = matchingSkills.length > 0
+
+      return {
+        ...jobObj,
+        matchingSkills,
+        missingSkills,
+        matchPercentage,
+        isEligible,
+        skillMatch,
+        recommendationScore: calculateRecommendationScore(matchPercentage, isEligible, matchingSkills.length)
+      }
+    })
+
+    // Filter and sort jobs
+    const { minMatch = 20, sortBy = 'recommendation' } = req.query
+    
+    let filteredJobs = jobsWithMatches.filter(job => 
+      job.skillMatch && job.matchPercentage >= parseInt(minMatch)
+    )
+
+    // Sort jobs based on criteria
+    switch (sortBy) {
+      case 'match':
+        filteredJobs.sort((a, b) => b.matchPercentage - a.matchPercentage)
+        break
+      case 'eligible':
+        filteredJobs.sort((a, b) => {
+          if (a.isEligible && !b.isEligible) return -1
+          if (!a.isEligible && b.isEligible) return 1
+          return b.matchPercentage - a.matchPercentage
+        })
+        break
+      case 'recommendation':
+      default:
+        filteredJobs.sort((a, b) => b.recommendationScore - a.recommendationScore)
+        break
+    }
+
+    // Pagination
+    const page = parseInt(req.query.page) || 1
+    const limit = parseInt(req.query.limit) || 10
+    const skip = (page - 1) * limit
+    const paginatedJobs = filteredJobs.slice(skip, skip + limit)
+
+    // Get skill analysis
+    const skillAnalysis = analyzeStudentSkills(profile.skills, allJobs)
+
+    res.json({
+      jobs: paginatedJobs,
+      pagination: {
+        current: page,
+        pages: Math.ceil(filteredJobs.length / limit),
+        total: filteredJobs.length
+      },
+      stats: {
+        totalJobs: allJobs.length,
+        matchedJobs: filteredJobs.length,
+        eligibleJobs: filteredJobs.filter(job => job.isEligible).length,
+        highMatchJobs: filteredJobs.filter(job => job.matchPercentage >= 70).length
+      },
+      studentProfile: {
+        skills: profile.skills,
+        skillCount: profile.skills.length,
+        cgpa: profile.cgpa,
+        graduationYear: profile.graduationYear
+      },
+      skillAnalysis,
+      filters: {
+        minMatch: parseInt(minMatch),
+        sortBy
+      }
+    })
+  } catch (error) {
+    console.error('Get matched jobs error:', error)
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
+// Helper function to check job eligibility
+function checkJobEligibility(profile, eligibility) {
+  if (!eligibility) return true
+  
+  let eligible = true
+  
+  if (eligibility.minCgpa && profile.cgpa < eligibility.minCgpa) {
+    eligible = false
+  }
+  
+  if (eligibility.graduationYear && eligibility.graduationYear.length > 0) {
+    if (!eligibility.graduationYear.includes(profile.graduationYear)) {
+      eligible = false
+    }
+  }
+  
+  return eligible
+}
+
+// Helper function to calculate recommendation score
+function calculateRecommendationScore(matchPercentage, isEligible, matchingSkillsCount) {
+  let score = matchPercentage
+  
+  // Boost score for eligible jobs
+  if (isEligible) {
+    score += 20
+  }
+  
+  // Boost score based on number of matching skills
+  score += Math.min(matchingSkillsCount * 5, 25)
+  
+  return Math.min(score, 100)
+}
+
+// Helper function to analyze student skills
+function analyzeStudentSkills(studentSkills, allJobs) {
+  const allJobSkills = allJobs.reduce((acc, job) => {
+    if (job.requiredSkills) {
+      acc.push(...job.requiredSkills)
+    }
+    return acc
+  }, [])
+  
+  const skillFrequency = {}
+  allJobSkills.forEach(skill => {
+    const normalizedSkill = skill.toLowerCase()
+    skillFrequency[normalizedSkill] = (skillFrequency[normalizedSkill] || 0) + 1
+  })
+  
+  // Find marketable skills (skills student has that are in demand)
+  const marketableSkills = studentSkills.filter(skill => 
+    skillFrequency[skill.toLowerCase()] > 0
+  )
+  
+  // Find recommended skills (high frequency but student doesn't have)
+  const studentSkillsLower = studentSkills.map(s => s.toLowerCase())
+  const recommendedSkills = Object.entries(skillFrequency)
+    .filter(([skill, freq]) => freq >= 3 && !studentSkillsLower.includes(skill))
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([skill, freq]) => ({ skill, demand: freq }))
+  
+  return {
+    totalSkills: studentSkills.length,
+    marketableSkills: marketableSkills.length,
+    marketableSkillsList: marketableSkills,
+    recommendedSkills,
+    skillMarketability: marketableSkills.length / Math.max(studentSkills.length, 1) * 100
+  }
+}
 
 module.exports = router

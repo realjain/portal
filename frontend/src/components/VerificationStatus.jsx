@@ -1,4 +1,5 @@
-import { CheckCircle, XCircle, Clock, AlertTriangle } from 'lucide-react'
+import { CheckCircle, XCircle, Clock, AlertTriangle, Target } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 const VerificationStatus = ({ user, className = '' }) => {
   if (user?.role !== 'student') {
@@ -13,8 +14,8 @@ const VerificationStatus = ({ user, className = '' }) => {
           color: 'text-green-600',
           bgColor: 'bg-green-50',
           borderColor: 'border-green-200',
-          title: 'Verified Student',
-          message: 'You are verified by faculty and can apply for jobs!',
+          title: 'Verified Student - Ready for Job Applications!',
+          message: 'You are verified by faculty and can now apply for jobs and view skill-matched opportunities!',
           canApply: true
         }
       case 'rejected':
@@ -67,6 +68,18 @@ const VerificationStatus = ({ user, className = '' }) => {
                 <span> by {user.verifiedBy.name}</span>
               )}
             </p>
+          )}
+          
+          {user.verificationStatus === 'approved' && (
+            <div className="mt-3">
+              <Link
+                to="/jobs/matched"
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <Target className="w-4 h-4 mr-2" />
+                View Matched Jobs
+              </Link>
+            </div>
           )}
         </div>
       </div>
