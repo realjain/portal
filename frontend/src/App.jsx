@@ -18,6 +18,8 @@ import CompanyApplications from './pages/CompanyApplications'
 import ChangePassword from './components/ChangePassword'
 import Settings from './pages/Settings'
 import TestBackend from './pages/TestBackend'
+import AuthTest from './pages/AuthTest'
+import AuthDebug from './pages/AuthDebug'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -105,8 +107,10 @@ function App() {
             </ProtectedRoute>
           } />
 
-          {/* Test Route */}
+          {/* Test Routes */}
           <Route path="test" element={<TestBackend />} />
+          <Route path="auth-test" element={<AuthTest />} />
+          <Route path="auth-debug" element={<AuthDebug />} />
         </Route>
       </Routes>
     </AuthProvider>

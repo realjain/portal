@@ -83,11 +83,6 @@ const seedData = async () => {
     console.log(`✅ Total users created: ${userCount}`)
 
     console.log('\n🎉 Sample data created successfully!')
-    console.log('\n🔑 Login Credentials:')
-    console.log('Admin: admin@portal.com / admin123')
-    console.log('Faculty: faculty@test.com / faculty123')
-    console.log('Student: student@test.com / student123 (pending verification)')
-    console.log('Company: company@test.com / company123')
 
     process.exit(0)
   } catch (error) {

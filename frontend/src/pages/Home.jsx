@@ -50,35 +50,9 @@ const Home = () => {
     }
   ]
 
-  const testimonials = [
-    {
-      name: 'Sarah Johnson',
-      role: 'Software Engineer at Google',
-      image: '👩‍💻',
-      quote: 'This platform helped me land my dream internship at Google. The application process was seamless!'
-    },
-    {
-      name: 'Michael Chen',
-      role: 'HR Director at Microsoft',
-      image: '👨‍💼',
-      quote: 'We found amazing talent through this platform. The quality of candidates is exceptional.'
-    },
-    {
-      name: 'Emily Davis',
-      role: 'Data Scientist at Netflix',
-      image: '👩‍🔬',
-      quote: 'The career guidance and profile building tools were invaluable for my job search.'
-    }
-  ]
 
-  const companies = [
-    { name: 'Google', logo: '🔍' },
-    { name: 'Microsoft', logo: '🪟' },
-    { name: 'Apple', logo: '🍎' },
-    { name: 'Amazon', logo: '📦' },
-    { name: 'Netflix', logo: '🎬' },
-    { name: 'Meta', logo: '👥' }
-  ]
+
+
 
   return (
     <div className="space-y-20">
@@ -133,23 +107,7 @@ const Home = () => {
               </Link>
             )}
 
-            {/* Quick Login Links */}
-            {!user && (
-              <div className="text-center">
-                <p className="text-blue-200 text-sm mb-3">Quick Demo Login:</p>
-                <div className="flex flex-wrap justify-center gap-4">
-                  <Link to="/login" className="text-white bg-white bg-opacity-20 px-4 py-2 rounded-lg text-sm hover:bg-opacity-30 transition backdrop-blur-sm">
-                    👨‍🎓 Student Demo
-                  </Link>
-                  <Link to="/login" className="text-white bg-white bg-opacity-20 px-4 py-2 rounded-lg text-sm hover:bg-opacity-30 transition backdrop-blur-sm">
-                    🏢 Company Demo
-                  </Link>
-                  <Link to="/login" className="text-white bg-white bg-opacity-20 px-4 py-2 rounded-lg text-sm hover:bg-opacity-30 transition backdrop-blur-sm">
-                    👨‍💼 Admin Demo
-                  </Link>
-                </div>
-              </div>
-            )}
+
           </div>
         </div>
         
@@ -159,20 +117,7 @@ const Home = () => {
         <div className="absolute top-1/2 left-1/4 w-12 h-12 bg-green-400 rounded-full opacity-20 animate-ping"></div>
       </section>
 
-      {/* Trusted Companies */}
-      <section className="px-4">
-        <div className="max-w-6xl mx-auto text-center">
-          <p className="text-gray-600 mb-8 text-lg">Our students are placed in top companies</p>
-          <div className="flex flex-wrap justify-center items-center gap-8 opacity-60">
-            {companies.map((company, index) => (
-              <div key={index} className="flex items-center space-x-3 bg-white px-6 py-3 rounded-lg shadow-sm">
-                <span className="text-2xl">{company.logo}</span>
-                <span className="font-semibold text-gray-700">{company.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+
 
       {/* Stats Section */}
       <section className="px-4">
@@ -403,35 +348,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Success Stories</h2>
-            <p className="text-xl text-gray-600">Hear from our community of successful professionals</p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100">
-                <div className="flex items-center mb-6">
-                  <div className="text-4xl mr-4">{testimonial.image}</div>
-                  <div>
-                    <h4 className="font-bold text-gray-900">{testimonial.name}</h4>
-                    <p className="text-gray-600 text-sm">{testimonial.role}</p>
-                  </div>
-                </div>
-                <div className="flex mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
-                  ))}
-                </div>
-                <p className="text-gray-700 italic leading-relaxed">"{testimonial.quote}"</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+
 
       {/* CTA Section */}
       <section className="px-4">

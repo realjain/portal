@@ -9,40 +9,63 @@ const Login = () => {
   const navigate = useNavigate()
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [selectedRole, setSelectedRole] = useState('student')
   const [showPassword, setShowPassword] = useState(false)
+  const [selectedRole, setSelectedRole] = useState('student') // Default to student
 
-  const { register, handleSubmit, formState: { errors }, setValue } = useForm()
+  const { register, handleSubmit, formState: { errors } } = useForm()
+
+  const handleRoleSelection = (role) => {
+    setSelectedRole(role)
+    setError('')
+  }
 
   const onSubmit = async (data) => {
     try {
       setError('')
       setLoading(true)
-      await login(data.email, data.password)
+      
+      const email = data.email?.trim().toLowerCase()
+      const password = data.password
+      
+      if (!email || !password) {
+        setError('Email and password are required')
+        return
+      }
+      
+      console.log('Login form submitted:', { email, selectedRole })
+      
+      const user = await login(email, password)
+      console.log('Login successful, navigating to dashboard. User role:', user.role)
+      
       navigate('/dashboard')
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed')
+      console.error('Login form error:', err)
+      let errorMessage = 'Login failed'
+      
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message
+      } else if (err.response?.status === 400) {
+        errorMessage = 'Invalid email or password'
+      } else if (err.response?.status === 401) {
+        errorMessage = 'Invalid credentials'
+      } else if (err.message) {
+        errorMessage = err.message
+      }
+      
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
   }
 
-  const demoCredentials = {
-    student: { email: 'student@test.com', password: 'student123' },
-    faculty: { email: 'faculty@test.com', password: 'faculty123' },
-    company: { email: 'company@test.com', password: 'company123' },
-    admin: { email: 'admin@portal.com', password: 'admin123' }
-  }
-
-  const handleRoleSelect = (role) => {
-    setSelectedRole(role)
-    setError('')
-  }
-
-  const handleDemoLogin = () => {
-    const credentials = demoCredentials[selectedRole]
-    setValue('email', credentials.email)
-    setValue('password', credentials.password)
+  const getRoleInfo = (role) => {
+    const roleData = {
+      student: { title: 'Student', color: 'bg-blue-600', hoverColor: 'hover:bg-blue-700' },
+      faculty: { title: 'Faculty', color: 'bg-green-600', hoverColor: 'hover:bg-green-700' },
+      company: { title: 'Company', color: 'bg-purple-600', hoverColor: 'hover:bg-purple-700' },
+      admin: { title: 'Admin', color: 'bg-red-600', hoverColor: 'hover:bg-red-700' }
+    }
+    return roleData[role] || roleData.student
   }
 
   return (
@@ -59,33 +82,33 @@ const Login = () => {
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-          <h2 className="text-xl font-semibold text-center mb-6 text-gray-800">Login to Your Account</h2>
-
-          {/* Role Selection Tabs */}
-          <div className="grid grid-cols-2 gap-2 mb-6 bg-gray-100 rounded-lg p-1">
-            {['student', 'faculty', 'company', 'admin'].map((role) => (
-              <button
-                key={role}
-                type="button"
-                onClick={() => handleRoleSelect(role)}
-                className={`py-2 px-3 rounded-md text-sm font-medium capitalize transition-colors ${selectedRole === role
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-800'
-                  }`}
-              >
-                {role === 'student' ? '🎓 Student' :
-                  role === 'faculty' ? '👨‍🏫 Faculty' :
-                    role === 'company' ? '🏢 Company' : '👨‍💼 Admin'}
-              </button>
-            ))}
-          </div>
+          <h2 className="text-xl font-semibold text-center mb-2 text-gray-800">Login to Your Account</h2>
+          <p className="text-center text-gray-600 mb-6">Select your role and enter your credentials</p>
 
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
               {error}
             </div>
           )}
 
+          {/* Role Selection Dropdown */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Account Type
+            </label>
+            <select
+              value={selectedRole}
+              onChange={(e) => handleRoleSelection(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="student">Student</option>
+              <option value="faculty">Faculty</option>
+              <option value="company">Company</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
+          {/* Login Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -101,7 +124,7 @@ const Login = () => {
                   }
                 })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter your college email"
+                placeholder="Enter your email"
               />
               {errors.email && (
                 <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
@@ -145,20 +168,11 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-3 px-4 rounded-lg hover:from-blue-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 font-medium transition-all duration-200 shadow-lg"
+              className={`w-full ${getRoleInfo(selectedRole).color} text-white py-3 px-4 rounded-lg ${getRoleInfo(selectedRole).hoverColor} focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 font-medium transition-all duration-200 shadow-lg`}
             >
-              {loading ? 'Signing in...' : `Sign in as ${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)}`}
+              {loading ? 'Signing in...' : `Sign In as ${getRoleInfo(selectedRole).title}`}
             </button>
           </form>
-
-          {/* Quick Demo Login Button */}
-          <button
-            type="button"
-            onClick={handleDemoLogin}
-            className="w-full mt-3 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm font-medium transition-colors"
-          >
-            🚀 Use Demo {selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)} Account
-          </button>
 
           <p className="text-center mt-6 text-sm text-gray-600">
             New to the college portal?{' '}
@@ -166,21 +180,6 @@ const Login = () => {
               Create Account
             </Link>
           </p>
-
-          {/* Current Role Info */}
-          <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
-              <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-              {selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)} Portal Access
-            </h3>
-            <div className="text-xs text-gray-600">
-              <div><strong>Demo Credentials:</strong></div>
-              <div className="font-mono bg-white px-3 py-2 rounded-lg mt-2 text-xs border">
-                📧 {demoCredentials[selectedRole].email}<br />
-                🔑 {demoCredentials[selectedRole].password}
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

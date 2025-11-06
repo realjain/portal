@@ -1,66 +1,47 @@
-#!/usr/bin/env node
+const cloudinary = require('cloudinary').v2;
+require('dotenv').config();
 
-/**
- * Cloudinary Setup Test Tool
- * This script helps you verify your Cloudinary configuration
- */
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
-require('dotenv').config()
-const { cloudinary, testCloudinaryConnection } = require('./backend/config/cloudinary')
-
-async function testCloudinarySetup() {
-  console.log('🌤️  Testing Cloudinary Setup for Resume Uploads')
-  console.log('=' .repeat(50))
-  
-  // Check environment variables
-  console.log('\n📋 Environment Variables:')
-  console.log(`CLOUDINARY_CLOUD_NAME: ${process.env.CLOUDINARY_CLOUD_NAME || '❌ NOT SET'}`)
-  console.log(`CLOUDINARY_API_KEY: ${process.env.CLOUDINARY_API_KEY ? '✅ SET' : '❌ NOT SET'}`)
-  console.log(`CLOUDINARY_API_SECRET: ${process.env.CLOUDINARY_API_SECRET ? '✅ SET' : '❌ NOT SET'}`)
-  
-  // Test connection
-  console.log('\n🔗 Testing Connection:')
-  const isConnected = await testCloudinaryConnection()
-  
-  if (isConnected) {
-    console.log('✅ Cloudinary connection successful!')
+const testCloudinarySetup = async () => {
+  try {
+    console.log('Testing Cloudinary configuration...');
+    console.log('Cloud Name:', process.env.CLOUDINARY_CLOUD_NAME);
+    console.log('API Key:', process.env.CLOUDINARY_API_KEY ? 'Set' : 'Not set');
+    console.log('API Secret:', process.env.CLOUDINARY_API_SECRET ? 'Set' : 'Not set');
     
-    // Test upload folder structure
-    try {
-      console.log('\n📁 Testing Upload Folder:')
-      const folderResult = await cloudinary.api.create_folder('placement-portal/resumes')
-      console.log('✅ Upload folder ready:', folderResult.path)
-    } catch (error) {
-      if (error.http_code === 400 && error.message.includes('already exists')) {
-        console.log('✅ Upload folder already exists')
-      } else {
-        console.log('⚠️  Folder creation warning:', error.message)
-      }
+    // Test connection by getting account details
+    const result = await cloudinary.api.ping();
+    console.log('✅ Cloudinary connection successful!');
+    console.log('Ping result:', result);
+    
+    // Test upload capabilities
+    console.log('Testing upload capabilities...');
+    const uploadResult = await cloudinary.uploader.upload('data:text/plain;base64,SGVsbG8gV29ybGQ=', {
+      resource_type: 'raw',
+      public_id: 'test_file',
+      folder: 'test'
+    });
+    
+    console.log('✅ Test upload successful!');
+    console.log('Upload URL:', uploadResult.secure_url);
+    
+    // Clean up test file
+    await cloudinary.uploader.destroy('test/test_file', { resource_type: 'raw' });
+    console.log('✅ Test file cleaned up');
+    
+  } catch (error) {
+    console.error('❌ Cloudinary setup failed:', error.message);
+    if (error.http_code) {
+      console.error('HTTP Code:', error.http_code);
     }
-    
-    console.log('\n🎉 Cloudinary is ready for resume uploads!')
-    console.log('\nNext steps:')
-    console.log('1. Start your backend server: npm run server')
-    console.log('2. Test upload at: http://localhost:5001/api/upload/test')
-    console.log('3. Upload a resume through your frontend')
-    
-  } else {
-    console.log('❌ Cloudinary connection failed!')
-    console.log('\n🔧 Setup Instructions:')
-    console.log('1. Go to https://cloudinary.com and create a free account')
-    console.log('2. Get your credentials from the dashboard')
-    console.log('3. Update your .env file with actual values:')
-    console.log('   CLOUDINARY_CLOUD_NAME=your-actual-cloud-name')
-    console.log('   CLOUDINARY_API_KEY=your-actual-api-key')
-    console.log('   CLOUDINARY_API_SECRET=your-actual-api-secret')
-    console.log('4. Restart your server and try again')
+    process.exit(1);
   }
-  
-  console.log('\n' + '=' .repeat(50))
-}
+};
 
-// Run the test
-testCloudinarySetup().catch(error => {
-  console.error('❌ Test failed:', error.message)
-  process.exit(1)
-})
+testCloudinarySetup();

@@ -1,13 +1,13 @@
 import axios from 'axios'
 
-// Configure axios defaults
-axios.defaults.baseURL = 'http://localhost:5001'
+// Configure axios defaults - use relative URLs to work with Vite proxy
+axios.defaults.baseURL = ''
 axios.defaults.headers.common['Content-Type'] = 'application/json'
 
 // Add request interceptor for debugging
 axios.interceptors.request.use(
   (config) => {
-    console.log('Making request to:', config.baseURL + config.url)
+    console.log('Making request to:', config.url)
     return config
   },
   (error) => {

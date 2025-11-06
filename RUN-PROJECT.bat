@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo   INTERNSHIP & PLACEMENT PORTAL
+echo   INTERNSHIP ^& PLACEMENT PORTAL
 echo ========================================
 echo.
 

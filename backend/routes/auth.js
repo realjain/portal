@@ -206,6 +206,42 @@ router.post('/reset-admin', async (req, res) => {
   }
 })
 
+// Update user profile (authenticated users)
+router.put('/profile', auth, async (req, res) => {
+  try {
+    const allowedFields = [
+      'name', 'companyName', 'description', 'industry', 'website', 'location', 
+      'size', 'founded', 'contactEmail', 'contactPhone', 'address', 'benefits', 
+      'culture', 'designation', 'qualification', 'experience', 'specialization', 
+      'phone', 'officeLocation', 'officeHours', 'bio', 'researchInterests', 
+      'publications', 'title', 'department', 'notificationPreferences'
+    ]
+
+    // Filter only allowed fields
+    const updates = {}
+    Object.keys(req.body).forEach(key => {
+      if (allowedFields.includes(key)) {
+        updates[key] = req.body[key]
+      }
+    })
+
+    // Update user
+    const user = await User.findByIdAndUpdate(
+      req.user._id, 
+      updates, 
+      { new: true, runValidators: true }
+    )
+
+    res.json({
+      message: 'Profile updated successfully',
+      user: user.toJSON()
+    })
+  } catch (error) {
+    console.error('Update profile error:', error)
+    res.status(500).json({ message: 'Server error updating profile' })
+  }
+})
+
 // Change password (authenticated users)
 router.post('/change-password', [
   auth,
@@ -329,7 +365,7 @@ router.post('/create-defaults', async (req, res) => {
         role: 'admin'
       })
       await admin.save()
-      createdUsers.push({ email: 'admin@portal.com', password: 'admin123', role: 'admin' })
+      createdUsers.push({ email: 'admin@portal.com', role: 'admin' })
     } else {
       existingUsers.push({ email: 'admin@portal.com', role: 'admin' })
     }
@@ -345,7 +381,7 @@ router.post('/create-defaults', async (req, res) => {
         department: 'Computer Science'
       })
       await faculty.save()
-      createdUsers.push({ email: 'faculty@test.com', password: 'faculty123', role: 'faculty' })
+      createdUsers.push({ email: 'faculty@test.com', role: 'faculty' })
     } else {
       existingUsers.push({ email: 'faculty@test.com', role: 'faculty' })
     }
@@ -363,7 +399,7 @@ router.post('/create-defaults', async (req, res) => {
         verificationStatus: 'pending'
       })
       await student.save()
-      createdUsers.push({ email: 'student@test.com', password: 'student123', role: 'student' })
+      createdUsers.push({ email: 'student@test.com', role: 'student' })
 
       // Create Student Profile
       const existingProfile = await StudentProfile.findOne({ userId: student._id })
@@ -400,7 +436,7 @@ router.post('/create-defaults', async (req, res) => {
         companyName: 'Tech Corp Solutions'
       })
       await company.save()
-      createdUsers.push({ email: 'company@test.com', password: 'company123', role: 'company' })
+      createdUsers.push({ email: 'company@test.com', role: 'company' })
     } else {
       existingUsers.push({ email: 'company@test.com', role: 'company' })
     }
@@ -418,12 +454,7 @@ router.post('/create-defaults', async (req, res) => {
       message,
       created: createdUsers,
       existing: existingUsers,
-      users: [
-        { email: 'admin@portal.com', password: 'admin123', role: 'admin' },
-        { email: 'faculty@test.com', password: 'faculty123', role: 'faculty' },
-        { email: 'student@test.com', password: 'student123', role: 'student' },
-        { email: 'company@test.com', password: 'company123', role: 'company' }
-      ]
+      totalUsers: createdUsers.length + existingUsers.length
     })
   } catch (error) {
     console.error('Error creating default users:', error)

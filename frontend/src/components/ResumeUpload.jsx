@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Upload, FileText, Trash2, Eye, Download, AlertCircle, ExternalLink } from 'lucide-react'
+import { Upload, FileText, Trash2, Download, AlertCircle, ExternalLink } from 'lucide-react'
 import { generatePDFUrls, extractUserIdFromResumeUrl } from '../utils/pdfUtils'
 
 const ResumeUpload = ({ className = '' }) => {
@@ -9,7 +9,7 @@ const ResumeUpload = ({ className = '' }) => {
   const [dragOver, setDragOver] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  const [showResumeViewer, setShowResumeViewer] = useState(false)
+
 
   useEffect(() => {
     fetchResumeInfo()
@@ -169,13 +169,7 @@ const ResumeUpload = ({ className = '' }) => {
                       <ExternalLink className="w-4 h-4 mr-1" />
                       View PDF
                     </a>
-                    <button
-                      onClick={() => setShowResumeViewer(!showResumeViewer)}
-                      className="inline-flex items-center px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
-                    >
-                      <Eye className="w-4 h-4 mr-1" />
-                      {showResumeViewer ? 'Hide' : 'Preview'}
-                    </button>
+
                     <button
                       onClick={deleteResume}
                       className="inline-flex items-center px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
@@ -189,108 +183,7 @@ const ResumeUpload = ({ className = '' }) => {
             </div>
           </div>
 
-          {/* Embedded Resume Viewer */}
-          {showResumeViewer && (
-            <div className="border rounded-lg overflow-hidden bg-white">
-              <div className="bg-gray-100 px-4 py-2 text-sm text-gray-600 flex justify-between items-center">
-                <span>Resume Preview - {resumeInfo.filename}</span>
-                <button
-                  onClick={() => setShowResumeViewer(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="p-4">
-                {/* PDF Preview Notice */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <FileText className="w-5 h-5 text-blue-600 mt-0.5" />
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-blue-800">PDF Preview</h3>
-                      <p className="text-sm text-blue-700 mt-1">
-                        Due to browser security restrictions, PDFs may not display in embedded viewers. 
-                        Use the buttons below to view your resume.
-                      </p>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Action Buttons */}
-                {(() => {
-                  const userId = resumeInfo.userId || extractUserIdFromResumeUrl(resumeInfo.resumeUrl)
-                  const pdfUrls = generatePDFUrls(resumeInfo.resumeUrl, userId)
-                  
-                  return (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-                      <a 
-                        href={pdfUrls.view} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        <ExternalLink className="w-5 h-5 mr-2" />
-                        Open in New Tab
-                      </a>
-                      <a 
-                        href={pdfUrls.download}
-                        download={resumeInfo.filename}
-                        className="flex items-center justify-center px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                      >
-                        <Download className="w-5 h-5 mr-2" />
-                        Download PDF
-                      </a>
-                    </div>
-                  )
-                })()}
-
-                {/* PDF Info */}
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <div className="text-sm text-gray-600">
-                    <p><strong>File:</strong> {resumeInfo.filename}</p>
-                    <p><strong>URL:</strong> <code className="text-xs bg-gray-200 px-1 rounded">{resumeInfo.resumeUrl}</code></p>
-                  </div>
-                </div>
-
-                {/* Try Embedded View (Optional) */}
-                <details className="mt-4">
-                  <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900">
-                    🔧 Try Embedded View (May Not Work)
-                  </summary>
-                  {(() => {
-                    const userId = resumeInfo.userId || extractUserIdFromResumeUrl(resumeInfo.resumeUrl)
-                    const pdfUrls = generatePDFUrls(resumeInfo.resumeUrl, userId)
-                    
-                    return (
-                      <div className="mt-3 border rounded-lg overflow-hidden">
-                        <iframe
-                          src={pdfUrls.viewer}
-                          className="w-full h-64"
-                          title="Resume Preview"
-                          style={{ border: 'none' }}
-                        >
-                          <div className="p-4 text-center bg-gray-100">
-                            <p className="text-gray-600 mb-2">Your browser cannot display this PDF.</p>
-                            <a 
-                              href={pdfUrls.view} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                            >
-                              <ExternalLink className="w-4 h-4 mr-2" />
-                              Open in New Tab
-                            </a>
-                          </div>
-                        </iframe>
-                      </div>
-                    )
-                  })()}
-                </details>
-              </div>
-            </div>
-          )}
 
           <div className="text-center">
             <p className="text-sm text-gray-600 mb-2">Want to upload a new resume?</p>

@@ -36,6 +36,38 @@ const userSchema = new mongoose.Schema({
       return this.role === 'company'
     }
   },
+  // Company-specific fields
+  description: String,
+  industry: String,
+  website: String,
+  location: String,
+  size: String,
+  founded: Number,
+  contactEmail: String,
+  contactPhone: String,
+  address: String,
+  benefits: String,
+  culture: String,
+  
+  // Faculty-specific fields
+  designation: String,
+  qualification: String,
+  experience: Number,
+  specialization: String,
+  phone: String,
+  officeLocation: String,
+  officeHours: String,
+  bio: String,
+  researchInterests: String,
+  publications: String,
+  
+  // Admin-specific fields
+  title: String,
+  notificationPreferences: {
+    emailNotifications: { type: Boolean, default: true },
+    systemAlerts: { type: Boolean, default: true },
+    weeklyReports: { type: Boolean, default: true }
+  },
   isActive: {
     type: Boolean,
     default: true
@@ -68,8 +100,7 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 })
 
-// Index for faster queries
-userSchema.index({ email: 1 })
+// Index for faster queries (email already has unique index)
 userSchema.index({ role: 1 })
 
 // Hash password before saving

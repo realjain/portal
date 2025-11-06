@@ -52,8 +52,7 @@ const studentProfileSchema = new mongoose.Schema({
   timestamps: true
 })
 
-// Indexes for better query performance
-studentProfileSchema.index({ userId: 1 })
+// Indexes for better query performance (userId already has unique index)
 studentProfileSchema.index({ graduationYear: 1 })
 studentProfileSchema.index({ skills: 1 })
 studentProfileSchema.index({ cgpa: 1 })

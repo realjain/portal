@@ -5,21 +5,20 @@ const StudentProfile = require('../models/StudentProfile')
 const { auth, authorize } = require('../middleware/auth')
 const { body, validationResult } = require('express-validator')
 
-// Get all students for verification (faculty only)
+// Get all students for verification (faculty only - restricted to their department)
 router.get('/students', [auth, authorize('faculty')], async (req, res) => {
   try {
-    const { status, department, page = 1, limit = 20 } = req.query
+    const { status, page = 1, limit = 20 } = req.query
     
-    const query = { role: 'student' }
+    // Faculty can only see students from their own department
+    const query = { 
+      role: 'student',
+      department: req.user.department // Restrict to faculty's department
+    }
     
     // Filter by verification status
     if (status) {
       query.verificationStatus = status
-    }
-    
-    // Filter by department (faculty can see their department students)
-    if (department) {
-      query.department = department
     }
     
     const students = await User.find(query)
@@ -123,6 +122,15 @@ router.patch('/students/:studentId/verify', [
       return res.status(404).json({ message: 'Student not found' })
     }
     
+    // Faculty can only verify students from their own department
+    if (student.department !== req.user.department) {
+      return res.status(403).json({ 
+        message: 'You can only verify students from your own department',
+        studentDepartment: student.department,
+        facultyDepartment: req.user.department
+      })
+    }
+    
     // Update verification status
     student.verificationStatus = action === 'approve' ? 'approved' : 'rejected'
     student.isVerified = action === 'approve'
@@ -155,26 +163,30 @@ router.patch('/students/:studentId/verify', [
   }
 })
 
-// Get faculty dashboard stats
+// Get faculty dashboard stats (restricted to faculty's department)
 router.get('/dashboard', [auth, authorize('faculty')], async (req, res) => {
   try {
-    const totalStudents = await User.countDocuments({ role: 'student' })
+    // Only count students from faculty's department
+    const departmentQuery = { role: 'student', department: req.user.department }
+    
+    const totalStudents = await User.countDocuments(departmentQuery)
     const pendingVerifications = await User.countDocuments({ 
-      role: 'student', 
+      ...departmentQuery,
       verificationStatus: 'pending' 
     })
     const approvedStudents = await User.countDocuments({ 
-      role: 'student', 
+      ...departmentQuery,
       verificationStatus: 'approved' 
     })
     const rejectedStudents = await User.countDocuments({ 
-      role: 'student', 
+      ...departmentQuery,
       verificationStatus: 'rejected' 
     })
     
-    // Get recent verifications by this faculty
+    // Get recent verifications by this faculty (from their department only)
     const recentVerifications = await User.find({
       role: 'student',
+      department: req.user.department, // Only from faculty's department
       verifiedBy: req.user._id,
       verificationDate: { $exists: true }
     })
@@ -208,6 +220,15 @@ router.get('/students/:studentId', [auth, authorize('faculty')], async (req, res
     
     if (!student || student.role !== 'student') {
       return res.status(404).json({ message: 'Student not found' })
+    }
+    
+    // Faculty can only view students from their own department
+    if (student.department !== req.user.department) {
+      return res.status(403).json({ 
+        message: 'You can only view students from your own department',
+        studentDepartment: student.department,
+        facultyDepartment: req.user.department
+      })
     }
     
     // Get student profile

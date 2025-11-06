@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import VerificationStatus from '../components/VerificationStatus'
 import axios from 'axios'
 import { MapPin, Clock, DollarSign, Users, Calendar } from 'lucide-react'
 
@@ -71,6 +72,12 @@ const JobDetail = () => {
       return
     }
 
+    // Check faculty verification status
+    if (!user.isVerified || user.verificationStatus !== 'approved') {
+      alert('You must be verified by faculty before applying for jobs. Please wait for faculty approval.')
+      return
+    }
+
     if (!profileComplete) {
       if (window.confirm('You need to complete your profile before applying. Would you like to complete it now?')) {
         navigate(`/profile?returnTo=/jobs/${id}`)
@@ -121,6 +128,9 @@ const JobDetail = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {/* Verification Status for Students */}
+      {user?.role === 'student' && <VerificationStatus user={user} />}
+      
       {/* Job Header */}
       <div className="bg-white rounded-lg shadow-md p-8">
         <div className="flex justify-between items-start mb-6">
@@ -211,7 +221,37 @@ const JobDetail = () => {
         <div className="bg-white rounded-lg shadow-md p-8">
           <h2 className="text-2xl font-semibold mb-4">Apply for this Position</h2>
           
-          {!showApplicationForm ? (
+          {/* Verification Status Check */}
+          {(!user.isVerified || user.verificationStatus !== 'approved') ? (
+            <div className="text-center">
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg mb-4">
+                <div className="flex items-center justify-center mb-2">
+                  <span className="text-2xl mr-2">⏳</span>
+                  <h3 className="font-semibold text-yellow-800">Faculty Verification Required</h3>
+                </div>
+                <p className="text-yellow-700 text-sm mb-2">
+                  {user.verificationStatus === 'pending' 
+                    ? 'Your account is pending faculty verification. You cannot apply for jobs until verified.'
+                    : user.verificationStatus === 'rejected'
+                    ? 'Your verification was rejected. Please contact faculty for more information.'
+                    : 'You need faculty verification to apply for jobs.'
+                  }
+                </p>
+                {user.verificationNotes && (
+                  <div className="mt-2 p-2 bg-white rounded border">
+                    <p className="text-xs font-medium text-gray-600 mb-1">Faculty Notes:</p>
+                    <p className="text-sm text-gray-700">{user.verificationNotes}</p>
+                  </div>
+                )}
+              </div>
+              <button
+                disabled
+                className="bg-gray-400 text-white py-3 px-8 rounded-md cursor-not-allowed text-lg font-medium"
+              >
+                Apply Now (Verification Required)
+              </button>
+            </div>
+          ) : !showApplicationForm ? (
             <div className="text-center">
               <button
                 onClick={handleApplyClick}

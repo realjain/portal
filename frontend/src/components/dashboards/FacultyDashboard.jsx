@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+import { useAuth } from '../../contexts/AuthContext'
 import { 
   Users, 
   CheckCircle, 
@@ -8,10 +9,12 @@ import {
   Eye,
   FileText,
   Award,
-  AlertCircle
+  AlertCircle,
+  Building
 } from 'lucide-react'
 
 const FacultyDashboard = () => {
+  const { user } = useAuth()
   const [stats, setStats] = useState({
     totalStudents: 0,
     pendingVerifications: 0,
@@ -81,7 +84,13 @@ const FacultyDashboard = () => {
       alert(`Student ${action === 'approve' ? 'approved' : 'rejected'} successfully!`)
     } catch (error) {
       console.error('Error verifying student:', error)
-      alert('Failed to update student verification status')
+      
+      // Handle department restriction error
+      if (error.response?.status === 403) {
+        alert(error.response.data.message || 'You can only verify students from your own department')
+      } else {
+        alert('Failed to update student verification status')
+      }
     }
   }
 
@@ -103,7 +112,14 @@ const FacultyDashboard = () => {
       setStudentDetails(response.data)
     } catch (error) {
       console.error('Error fetching student details:', error)
-      alert('Failed to load student details')
+      
+      // Handle department restriction error
+      if (error.response?.status === 403) {
+        alert(error.response.data.message || 'You can only view students from your own department')
+        setShowDetailedModal(false)
+      } else {
+        alert('Failed to load student details')
+      }
     } finally {
       setLoadingDetails(false)
     }
@@ -130,9 +146,28 @@ const FacultyDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Faculty Dashboard</h1>
-        <p className="text-gray-600">Verify and manage student applications</p>
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Faculty Dashboard</h1>
+            <p className="text-gray-600">Verify and manage student applications</p>
+          </div>
+          {user?.department && (
+            <div className="flex items-center bg-blue-50 px-4 py-2 rounded-lg">
+              <Building className="w-5 h-5 text-blue-600 mr-2" />
+              <div className="text-right">
+                <p className="text-sm font-medium text-blue-900">Department</p>
+                <p className="text-lg font-bold text-blue-700">{user.department}</p>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-sm text-yellow-800">
+            <strong>Note:</strong> You can only view and verify students from your department ({user?.department}). 
+            This ensures proper academic oversight and maintains departmental boundaries.
+          </p>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -141,7 +176,7 @@ const FacultyDashboard = () => {
           <div className="flex items-center">
             <Users className="w-8 h-8 text-blue-600" />
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Students</p>
+              <p className="text-sm font-medium text-gray-600">Total Students ({user?.department})</p>
               <p className="text-2xl font-bold text-gray-900">{stats.totalStudents}</p>
             </div>
           </div>

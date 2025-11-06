@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useForm } from 'react-hook-form'
@@ -10,21 +10,84 @@ const Register = () => {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [selectedRole, setSelectedRole] = useState('student') // Default to student
 
-  const { register, handleSubmit, watch, formState: { errors } } = useForm()
-  const watchRole = watch('role')
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm()
+
+  // Set initial role value
+  useEffect(() => {
+    setValue('role', selectedRole)
+  }, [selectedRole, setValue])
+
+  const handleRoleSelection = (role) => {
+    setSelectedRole(role)
+    setValue('role', role) // Ensure form knows about the role change
+    setError('')
+  }
 
   const onSubmit = async (data) => {
     try {
       setError('')
       setLoading(true)
-      await registerUser(data)
+      
+      // Validate required fields based on role
+      if ((selectedRole === 'student' || selectedRole === 'faculty') && !data.department) {
+        setError(`Department is required for ${selectedRole}s`)
+        return
+      }
+      
+      if (selectedRole === 'company' && !data.companyName) {
+        setError('Company name is required for companies')
+        return
+      }
+      
+      // Ensure role is set correctly and clean up data
+      const formData = {
+        name: data.name?.trim(),
+        email: data.email?.trim().toLowerCase(),
+        password: data.password,
+        role: selectedRole
+      }
+      
+      // Add role-specific fields
+      if (selectedRole === 'student' || selectedRole === 'faculty') {
+        formData.department = data.department
+      } else if (selectedRole === 'company') {
+        formData.companyName = data.companyName?.trim()
+      }
+      
+      console.log('Registration form submitted:', { ...formData, password: '[HIDDEN]' })
+      
+      const user = await registerUser(formData)
+      console.log('Registration successful, navigating to dashboard. User role:', user.role)
+      
       navigate('/dashboard')
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed')
+      console.error('Registration form error:', err)
+      let errorMessage = 'Registration failed'
+      
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message
+      } else if (err.response?.data?.errors) {
+        errorMessage = err.response.data.errors.map(e => e.msg).join(', ')
+      } else if (err.message) {
+        errorMessage = err.message
+      }
+      
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
+  }
+
+  const getRoleInfo = (role) => {
+    const roleData = {
+      student: { title: 'Student', color: 'bg-blue-600', hoverColor: 'hover:bg-blue-700' },
+      faculty: { title: 'Faculty', color: 'bg-green-600', hoverColor: 'hover:bg-green-700' },
+      company: { title: 'Company', color: 'bg-purple-600', hoverColor: 'hover:bg-purple-700' },
+      admin: { title: 'Admin', color: 'bg-red-600', hoverColor: 'hover:bg-red-700' }
+    }
+    return roleData[role] || roleData.student
   }
 
   return (
@@ -41,14 +104,33 @@ const Register = () => {
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-          <h2 className="text-xl font-semibold text-center mb-6 text-gray-800">Create New Account</h2>
+          <h2 className="text-xl font-semibold text-center mb-2 text-gray-800">Create New Account</h2>
+          <p className="text-center text-gray-600 mb-6">Select your role and fill in your details</p>
           
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
               {error}
             </div>
           )}
 
+          {/* Role Selection Dropdown */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Account Type
+            </label>
+            <select
+              value={selectedRole}
+              onChange={(e) => handleRoleSelection(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            >
+              <option value="student">Student</option>
+              <option value="faculty">Faculty</option>
+              <option value="company">Company</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
+          {/* Registration Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -79,7 +161,7 @@ const Register = () => {
                   }
                 })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="Enter your college email"
+                placeholder="Enter your email"
               />
               {errors.email && (
                 <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
@@ -120,32 +202,16 @@ const Register = () => {
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Account Type
-              </label>
-              <select
-                {...register('role', { required: 'Account type is required' })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              >
-                <option value="">Select your role</option>
-                <option value="student">🎓 Student - Looking for opportunities</option>
-                <option value="faculty">👨‍🏫 Faculty - Verify students</option>
-                <option value="company">🏢 Company - Hiring talent</option>
-                <option value="admin">👨‍💼 Admin - System management</option>
-              </select>
-              {errors.role && (
-                <p className="text-red-500 text-sm mt-1">{errors.role.message}</p>
-              )}
-            </div>
+            {/* Role field - ensure it's properly set */}
+            <input type="hidden" {...register('role')} value={selectedRole} />
 
-            {(watchRole === 'student' || watchRole === 'faculty') && (
+            {(selectedRole === 'student' || selectedRole === 'faculty') && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Department
                 </label>
                 <select
-                  {...register('department', { required: `Department is required for ${watchRole}s` })}
+                  {...register('department', { required: `Department is required for ${selectedRole}s` })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 >
                   <option value="">Select your department</option>
@@ -164,7 +230,7 @@ const Register = () => {
               </div>
             )}
 
-            {watchRole === 'company' && (
+            {selectedRole === 'company' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Company Name
@@ -184,9 +250,9 @@ const Register = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-green-600 to-blue-600 text-white py-3 px-4 rounded-lg hover:from-green-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 font-medium transition-all duration-200 shadow-lg"
+              className={`w-full ${getRoleInfo(selectedRole).color} text-white py-3 px-4 rounded-lg ${getRoleInfo(selectedRole).hoverColor} focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 font-medium transition-all duration-200 shadow-lg`}
             >
-              {loading ? 'Creating Account...' : 'Create Account'}
+              {loading ? 'Creating Account...' : `Create ${getRoleInfo(selectedRole).title} Account`}
             </button>
           </form>
 
